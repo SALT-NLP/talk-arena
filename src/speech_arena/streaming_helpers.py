@@ -36,7 +36,7 @@ def gradio_gen_factory(streaming_fn, model_name, anonymous):
 
 
 def gemini_streaming(model_id):
-    genai.configure(api_key=os.environ['API_KEY'])
+    genai.configure(api_key=os.environ['GEMINI_API_KEY'])
     resampler = Audio(sampling_rate=16_000)
 
     model = genai.GenerativeModel(model_id)

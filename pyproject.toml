@@ -20,8 +20,15 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 dependencies = [
-    "transformers",
-    "gradio",
+    "transformers==4.45.2",
+    "transformers-stream-generator==0.0.5",
+    "gradio==5.1.0",
+    "tinydb==4.8.0",
+    "xxhash==3.4.1",
+    "google-ai-generativelanguage==0.6.10",
+    "datasets==2.18.0",
+    "librosa==0.10.1",
+    "soundfile==0.12.1",
 ]
 
 [tool.hatch.build]
