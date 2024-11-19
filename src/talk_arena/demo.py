@@ -5,7 +5,7 @@ import xxhash
 from tinydb import TinyDB
 from transformers import pipeline
 
-import speech_arena.streaming_helpers as sh
+import talk_arena.streaming_helpers as sh
 
 
 if gr.NO_RELOAD:
