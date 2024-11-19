@@ -29,6 +29,7 @@ dependencies = [
     "datasets==2.18.0",
     "librosa==0.10.1",
     "soundfile==0.12.1",
+    "openai==1.52.0",
 ]
 
 [tool.hatch.build]
