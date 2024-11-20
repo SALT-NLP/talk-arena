@@ -62,6 +62,111 @@ def gemini_streaming(model_id):
 
     return get_chat_response, model
 
+def geminip_streaming(model_id):
+    import openai
+    from pathlib import Path
+    import base64
+    import os
+
+    client = openai.OpenAI(
+        api_key="", # The API Key
+        base_url=""
+    )
+    model=client
+    resampler = Audio(sampling_rate=16_000)
+    import pandas as pd
+    import os
+    def get_chat_response(audio_input):
+        if audio_input == None:
+            return ""
+        sr, y = audio_input
+        x = xxhash.xxh32(bytes(y)).hexdigest()
+        y = y.astype(np.float32)
+        y /= np.max(np.abs(y))
+        a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
+        sf.write(f"{x}.mp3", a["array"], a["sampling_rate"], format="mp3")
+        audio_bytes = Path(f"{x}.mp3").read_bytes()
+        encoded_data = base64.b64encode(audio_bytes).decode("utf-8")
+        prompt="You are a helpful assistant. Respond conversationally to the speech provided."
+        text_response = []
+        try:
+            response = client.chat.completions.create(model="gemini-1.5-pro", messages = [
+                {
+                    "role": "user",
+                    "content": prompt
+                },
+                {
+                    "role": "user",
+                    "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": "data:audio/mp3;base64,{}".format(encoded_data)
+                    }
+                    ]
+                }
+            ])
+            #print('#Response', response.choices[0].message.content)
+            os.remove(f"{x}.mp3")
+            yield response.choices[0].message.content
+            return response.choices[0].message.content
+        except:
+            return 'error'
+    return get_chat_response, model
+
+def gpt4o_streaming(model_id):
+    import base64
+    import requests
+    from openai import OpenAI
+    from scipy.io import wavfile
+    import pandas as pd
+    import os
+
+    client = OpenAI(api_key='')
+    resampler = Audio(sampling_rate=16_000)
+    def get_chat_response(audio_input):
+        if audio_input == None:
+            return ""
+        sr, y = audio_input
+        x = xxhash.xxh32(bytes(y)).hexdigest()
+        y = y.astype(np.float32)
+        y /= np.max(np.abs(y))
+        a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
+        sf.write(f"{x}.wav", a["array"], a["sampling_rate"], format="wav")
+        with open(f"{x}.wav", 'rb') as wav_file:
+            wav_data = wav_file.read()
+        encoded_string = base64.b64encode(wav_data).decode('utf-8')
+        prompt="You are a helpful assistant. Respond conversationally to the speech provided."
+        try:
+            completion = client.chat.completions.create(
+                model="gpt-4o-audio-preview",
+                modalities=["text", "audio"],
+                audio={"voice": "alloy", "format": "wav"},
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            },
+                            {
+                                "type": "input_audio",
+                                "input_audio": {
+                                    "data": encoded_string,
+                                    "format": "wav"
+                                }
+                            }
+                        ]
+                    },
+                ]
+            )
+            os.remove(f"{x}.wav")
+            yield completion.choices[0].message.audio.transcript
+            return completion.choices[0].message.audio.transcript
+        except:
+            return 'error'
+    return get_chat_response, client
+
 def asr_streaming(llm, tokenizer, asr_pipe):
     resampler = Audio(sampling_rate=16_000)
 
