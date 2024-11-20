@@ -99,7 +99,8 @@ def pairwise_response(audio_input, state, model_order):
 def on_page_load(state, model_order):
     if state == 0:
         gr.Info(
-            "Record something you'd say to an AI Assistant! Think about what you usually use Siri, Google Assistant, or ChatGPT for."
+            "Record something you'd say to an AI Assistant! Think about what you usually use Siri, Google Assistant,"
+            " or ChatGPT for."
         )
         state = 1
         if anonymous:
@@ -122,7 +123,8 @@ def recording_complete(state):
 def responses_complete(state):
     if state == 2:
         gr.Info(
-            "Give us your feedback! Mark which model gave you the best response so we can understand the quality of these different voice assistant models."
+            "Give us your feedback! Mark which model gave you the best response so we can understand the quality of"
+            " these different voice assistant models."
         )
         state = 3
     return state
