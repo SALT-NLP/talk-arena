@@ -199,12 +199,22 @@ def diva_streaming(diva_model_str):
         y = y.astype(np.float32)
         y /= np.max(np.abs(y))
         a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
+        yield from diva_model.generate_stream(
+            a["array"],
+            (
+                "You are a helpful assistant The user is talking to you with their voice and you are responding with"
+                " text."
+            ),
+            do_sample=do_sample,
+            max_new_tokens=256,
+        )
 
     return diva_audio, diva_model
 
 
-def typhoon_streaming(typhoon_model_str):
-    typhoon_model = AutoModel.from_pretrained(typhoon_model_str, trust_remote_code=True)
+def typhoon_streaming(typhoon_model_str, device="cuda:1"):
+    typhoon_model = AutoModel.from_pretrained(typhoon_model_str, trust_remote_code=True).to(device)
+    tokenizer = typhoon_model.llama_tokenizer
     resampler = Audio(sampling_rate=16_000)
 
     @torch.no_grad
@@ -216,12 +226,14 @@ def typhoon_streaming(typhoon_model_str):
         a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
         sf.write(f"{x}.wav", a["array"], a["sampling_rate"], format="wav")
         streamer = TextIteratorStreamer(tokenizer)
-        response = model.generate(
+        prompt_pattern = "<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<Speech><SpeechHere></Speech> {}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        response = typhoon_model.generate(
             wav_path=f"{x}.wav",
             prompt=(
                 "You are a helpful assistant. Listen to this audio, and respond accordingly in the language it is"
                 " spoken in."
             ),
+            device=device,
             prompt_pattern=prompt_pattern,
             do_sample=False,
             max_length=1200,
@@ -231,9 +243,11 @@ def typhoon_streaming(typhoon_model_str):
         generated_text = ""
         for new_text in streamer:
             generated_text += new_text
-            yield generated_text.split("<|im_start|>assistant\n")[-1].replace("<|im_end|>", "")
+            yield generated_text.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1].replace(
+                "<|eot_id|>", ""
+            )
         os.remove(f"{x}.wav")
-        return generated_text
+        return generated_text.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1].replace("<|eot_id|>", "")
 
     return typhoon_audio, typhoon_model
 
