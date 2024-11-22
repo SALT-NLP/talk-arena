@@ -17,7 +17,7 @@ if gr.NO_RELOAD:
 
     anonymous = True
 
-    model_shorthand = ["qwen2", "diva_3_8b", "pipe_l3.0", "gemini_1.5f", "gpt4o", "gemini_1.5p"]
+    model_shorthand = ["qwen2", "diva_3_8b", "pipe_q2", "gemini_1.5f", "gpt4o", "gemini_1.5p"]
     all_models = list(range(len(model_shorthand)))
 
     # Generation Setup
