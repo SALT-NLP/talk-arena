@@ -210,6 +210,7 @@ def typhoon_streaming(typhoon_model_str):
     @torch.no_grad
     def typhoon_audio(audio_input, do_sample=False, temperature=0.001):
         sr, y = audio_input
+        x = xxhash.xxh32(bytes(y)).hexdigest()
         y = y.astype(np.float32)
         y /= np.max(np.abs(y))
         a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
