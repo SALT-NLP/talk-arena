@@ -20,9 +20,10 @@ def _get_config_for_model_name(model_id):
     if "MODEL_CONFIG" in os.environ:
         return json.loads(os.environ["MODEL_CONFIG"])[model_id]
     return {
-        "WillHeld/DiVA-llama-3.2-1b": {"base_url": "http://localhost:8002/v1", "api_key": "empty"},
-        "WillHeld/DiVA-llama-3-v0-8b": {"base_url": "http://localhost:8000/v1", "api_key": "empty"},
-        "Qwen/Qwen2-Audio-7B-Instruct": {"base_url": "http://localhost:8001/v1", "api_key": "empty"},
+        # "WillHeld/DiVA-llama-3.2-1b": {"base_url": "http://localhost:8002/v1", "api_key": "empty"},
+        "scb10x/llama-3-typhoon-v1.5-8b-audio-preview": {"base_url": "https://ov228wydp5d4u7-40022.proxy.runpod.net/v1", "api_key": "empty"},
+        "WillHeld/DiVA-llama-3-v0-8b": {"base_url": "https://ov228wydp5d4u7-40021.proxy.runpod.net/v1", "api_key": "empty"},
+        "Qwen/Qwen2-Audio-7B-Instruct": {"base_url": "https://ov228wydp5d4u7-40020.proxy.runpod.net/v1", "api_key": "empty"},
     }[model_id]
 
 
