@@ -272,3 +272,36 @@ def qwen2_streaming(qwen2_model_str):
         return generated_text
 
     return qwen2_audio, qwen2_model
+
+def typhoon_streaming(typhoon_model_str):
+    resampler = Audio(sampling_rate=16_000)
+    typhoon_model = AutoModel.from_pretrained(typhoon_model_str, torch_dtype=torch.float16, trust_remote_code=True)
+    typhoon_model.to("cuda:0")
+    typhoon_model.eval()
+    prompt_pattern="<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<Speech><SpeechHere></Speech> {}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+    prompt='You are a helpful assistant. Respond conversationally to the speech provided in the language it is spoken in.'
+    @torch.no_grad
+    def typhoon_audio(audio_input, do_sample=False, temperature=0.001):
+        if audio_input == None:
+            return ""
+        sr, y = audio_input
+        x = xxhash.xxh32(bytes(y)).hexdigest()
+        y = y.astype(np.float32)
+        y /= np.max(np.abs(y))
+        a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
+        sf.write(f"{x}.wav", a["array"], a["sampling_rate"], format="wav")
+        print(f"{x}.wav")
+        response = typhoon_model.generate(
+            audio=a["array"],
+            prompt=prompt,
+            prompt_pattern=prompt_pattern,
+            do_sample=False,
+            max_new_tokens=512,
+            repetition_penalty=1.1,
+            num_beams=1,
+        )
+        yield response
+        os.remove(f"{x}.wav")
+        return response
+    return typhoon_audio, typhoon_model
+
