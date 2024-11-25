@@ -212,6 +212,46 @@ def diva_streaming(diva_model_str):
     return diva_audio, diva_model
 
 
+def typhoon_streaming(typhoon_model_str, device="cuda:1"):
+    typhoon_model = AutoModel.from_pretrained(typhoon_model_str, trust_remote_code=True).to(device)
+    tokenizer = typhoon_model.llama_tokenizer
+    resampler = Audio(sampling_rate=16_000)
+
+    @torch.no_grad
+    def typhoon_audio(audio_input, do_sample=False, temperature=0.001):
+        sr, y = audio_input
+        x = xxhash.xxh32(bytes(y)).hexdigest()
+        y = y.astype(np.float32)
+        y /= np.max(np.abs(y))
+        a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
+        sf.write(f"{x}.wav", a["array"], a["sampling_rate"], format="wav")
+        streamer = TextIteratorStreamer(tokenizer)
+        prompt_pattern = "<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<Speech><SpeechHere></Speech> {}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        response = typhoon_model.generate(
+            wav_path=f"{x}.wav",
+            prompt=(
+                "You are a helpful assistant. Listen to this audio, and respond accordingly in the language it is"
+                " spoken in."
+            ),
+            device=device,
+            prompt_pattern=prompt_pattern,
+            do_sample=False,
+            max_length=1200,
+            num_beams=1,
+            streamer=streamer,  # supports TextIteratorStreamer
+        )
+        generated_text = ""
+        for new_text in streamer:
+            generated_text += new_text
+            yield generated_text.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1].replace(
+                "<|eot_id|>", ""
+            )
+        os.remove(f"{x}.wav")
+        return generated_text.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1].replace("<|eot_id|>", "")
+
+    return typhoon_audio, typhoon_model
+
+
 def qwen2_streaming(qwen2_model_str):
     resampler = Audio(sampling_rate=16_000)
     qwen2_processor = AutoProcessor.from_pretrained(qwen2_model_str)
