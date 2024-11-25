@@ -1,13 +1,16 @@
+import base64
+import os
 from pathlib import Path
 
+import google.generativeai as genai
 import gradio as gr
 import librosa
 import numpy as np
 import soundfile as sf
-import os
 import torch
 import xxhash
 from datasets import Audio
+from openai import OpenAI
 from transformers import (
     AutoModel,
     AutoModelForCausalLM,
@@ -19,7 +22,7 @@ from transformers import (
     WhisperForConditionalGeneration,
 )
 from transformers.generation import GenerationConfig
-import google.generativeai as genai
+
 
 def gradio_gen_factory(streaming_fn, model_name, anonymous):
     def gen_from(audio_input, order):
@@ -36,7 +39,7 @@ def gradio_gen_factory(streaming_fn, model_name, anonymous):
 
 
 def gemini_streaming(model_id):
-    genai.configure(api_key=os.environ['GEMINI_API_KEY'])
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
     resampler = Audio(sampling_rate=16_000)
 
     model = genai.GenerativeModel(model_id)
@@ -62,20 +65,12 @@ def gemini_streaming(model_id):
 
     return get_chat_response, model
 
-def geminip_streaming(model_id):
-    import openai
-    from pathlib import Path
-    import base64
-    import os
 
-    client = openai.OpenAI(
-        api_key="", # The API Key
-        base_url=""
-    )
-    model=client
+def geminip_streaming(model_id):
+    client = OpenAI(api_key=os.environ["GEMINI_API_KEY"], base_url="https://generativelanguage.googleapis.com/v1beta/")
+    model = client
     resampler = Audio(sampling_rate=16_000)
-    import pandas as pd
-    import os
+
     def get_chat_response(audio_input):
         if audio_input == None:
             return ""
@@ -87,42 +82,35 @@ def geminip_streaming(model_id):
         sf.write(f"{x}.mp3", a["array"], a["sampling_rate"], format="mp3")
         audio_bytes = Path(f"{x}.mp3").read_bytes()
         encoded_data = base64.b64encode(audio_bytes).decode("utf-8")
-        prompt="You are a helpful assistant. Respond conversationally to the speech provided."
+        prompt = "You are a helpful assistant. Respond conversationally to the speech provided."
         text_response = []
         try:
-            response = client.chat.completions.create(model="gemini-1.5-pro", messages = [
-                {
-                    "role": "user",
-                    "content": prompt
-                },
-                {
-                    "role": "user",
-                    "content": [
+            response = client.chat.completions.create(
+                model="gemini-1.5-pro",
+                messages=[
+                    {"role": "user", "content": prompt},
                     {
-                        "type": "image_url",
-                        "image_url": "data:audio/mp3;base64,{}".format(encoded_data)
-                    }
-                    ]
-                }
-            ])
-            #print('#Response', response.choices[0].message.content)
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": "data:audio/mp3;base64,{}".format(encoded_data)}
+                        ],
+                    },
+                ],
+            )
+            # print('#Response', response.choices[0].message.content)
             os.remove(f"{x}.mp3")
             yield response.choices[0].message.content
             return response.choices[0].message.content
         except:
-            return 'error'
+            return "error"
+
     return get_chat_response, model
 
-def gpt4o_streaming(model_id):
-    import base64
-    import requests
-    from openai import OpenAI
-    from scipy.io import wavfile
-    import pandas as pd
-    import os
 
-    client = OpenAI(api_key='')
+def gpt4o_streaming(model_id):
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     resampler = Audio(sampling_rate=16_000)
+
     def get_chat_response(audio_input):
         if audio_input == None:
             return ""
@@ -132,10 +120,10 @@ def gpt4o_streaming(model_id):
         y /= np.max(np.abs(y))
         a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
         sf.write(f"{x}.wav", a["array"], a["sampling_rate"], format="wav")
-        with open(f"{x}.wav", 'rb') as wav_file:
+        with open(f"{x}.wav", "rb") as wav_file:
             wav_data = wav_file.read()
-        encoded_string = base64.b64encode(wav_data).decode('utf-8')
-        prompt="You are a helpful assistant. Respond conversationally to the speech provided."
+        encoded_string = base64.b64encode(wav_data).decode("utf-8")
+        prompt = "You are a helpful assistant. Respond conversationally to the speech provided."
         try:
             completion = client.chat.completions.create(
                 model="gpt-4o-audio-preview",
@@ -145,27 +133,20 @@ def gpt4o_streaming(model_id):
                     {
                         "role": "user",
                         "content": [
-                            {
-                                "type": "text",
-                                "text": prompt
-                            },
-                            {
-                                "type": "input_audio",
-                                "input_audio": {
-                                    "data": encoded_string,
-                                    "format": "wav"
-                                }
-                            }
-                        ]
+                            {"type": "text", "text": prompt},
+                            {"type": "input_audio", "input_audio": {"data": encoded_string, "format": "wav"}},
+                        ],
                     },
-                ]
+                ],
             )
             os.remove(f"{x}.wav")
             yield completion.choices[0].message.audio.transcript
             return completion.choices[0].message.audio.transcript
         except:
-            return 'error'
+            return "error"
+
     return get_chat_response, client
+
 
 def asr_streaming(llm, tokenizer, asr_pipe):
     resampler = Audio(sampling_rate=16_000)
@@ -199,8 +180,11 @@ def asr_streaming(llm, tokenizer, asr_pipe):
         generated_text = ""
         for new_text in streamer:
             generated_text += new_text
-            yield generated_text.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1].replace("<|eot_id|>", "")
+            yield generated_text.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1].replace(
+                "<|eot_id|>", ""
+            )
         return generated_text
+
     os.remove(f"{x}.wav")
     return pipelined
 
@@ -217,12 +201,55 @@ def diva_streaming(diva_model_str):
         a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
         yield from diva_model.generate_stream(
             a["array"],
-            "You are a helpful assistant The user is talking to you with their voice and you are responding with text.",
+            (
+                "You are a helpful assistant The user is talking to you with their voice and you are responding with"
+                " text."
+            ),
             do_sample=do_sample,
             max_new_tokens=256,
         )
 
     return diva_audio, diva_model
+
+
+def typhoon_streaming(typhoon_model_str, device="cuda:1"):
+    typhoon_model = AutoModel.from_pretrained(typhoon_model_str, trust_remote_code=True).to(device)
+    tokenizer = typhoon_model.llama_tokenizer
+    resampler = Audio(sampling_rate=16_000)
+
+    @torch.no_grad
+    def typhoon_audio(audio_input, do_sample=False, temperature=0.001):
+        sr, y = audio_input
+        x = xxhash.xxh32(bytes(y)).hexdigest()
+        y = y.astype(np.float32)
+        y /= np.max(np.abs(y))
+        a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
+        sf.write(f"{x}.wav", a["array"], a["sampling_rate"], format="wav")
+        streamer = TextIteratorStreamer(tokenizer)
+        prompt_pattern = "<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<Speech><SpeechHere></Speech> {}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        response = typhoon_model.generate(
+            wav_path=f"{x}.wav",
+            prompt=(
+                "You are a helpful assistant. Listen to this audio, and respond accordingly in the language it is"
+                " spoken in."
+            ),
+            device=device,
+            prompt_pattern=prompt_pattern,
+            do_sample=False,
+            max_length=1200,
+            num_beams=1,
+            streamer=streamer,  # supports TextIteratorStreamer
+        )
+        generated_text = ""
+        for new_text in streamer:
+            generated_text += new_text
+            yield generated_text.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1].replace(
+                "<|eot_id|>", ""
+            )
+        os.remove(f"{x}.wav")
+        return generated_text.split("<|start_header_id|>assistant<|end_header_id|>\n\n")[-1].replace("<|eot_id|>", "")
+
+    return typhoon_audio, typhoon_model
 
 
 def qwen2_streaming(qwen2_model_str):

@@ -22,8 +22,8 @@ if gr.NO_RELOAD:
     all_models = list(range(len(model_shorthand)))
 
     # Generation Setup
-    qwen2_audio, qwen2 = sh.qwen2_streaming("Qwen/Qwen2-Audio-7B-Instruct")
     diva_audio, diva = sh.diva_streaming("WillHeld/DiVA-llama-3-v0-8b")
+    qwen2_audio, qwen2 = sh.qwen2_streaming("Qwen/Qwen2-Audio-7B-Instruct")
     diva_smol_audio, diva_smol = sh.diva_streaming("WillHeld/DiVA-llama-3.2-1b")
     pipelined_system = sh.asr_streaming(diva.llm_decoder, diva.tokenizer, asr_pipe)
     gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
@@ -32,8 +32,8 @@ if gr.NO_RELOAD:
     typhoon_audio, typhoon_model = sh.typhoon_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
 
     resp_generators = [
-        sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
         sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous),
+        sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
         sh.gradio_gen_factory(diva_smol_audio, "DiVA Llama 3.2 1B", anonymous),
         sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
         sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
@@ -101,7 +101,8 @@ def pairwise_response(audio_input, state, model_order):
 def on_page_load(state, model_order):
     if state == 0:
         gr.Info(
-            "Record something you'd say to an AI Assistant! Think about what you usually use Siri, Google Assistant, or ChatGPT for."
+            "Record something you'd say to an AI Assistant! Think about what you usually use Siri, Google Assistant,"
+            " or ChatGPT for."
         )
         state = 1
         if anonymous:
@@ -124,7 +125,8 @@ def recording_complete(state):
 def responses_complete(state):
     if state == 2:
         gr.Info(
-            "Give us your feedback! Mark which model gave you the best response so we can understand the quality of these different voice assistant models."
+            "Give us your feedback! Mark which model gave you the best response so we can understand the quality of"
+            " these different voice assistant models."
         )
         state = 3
     return state
