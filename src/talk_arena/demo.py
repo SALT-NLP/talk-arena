@@ -2,10 +2,10 @@ import random
 
 import gradio as gr
 import xxhash
-from tinydb import TinyDB
 from transformers import pipeline
 
 import talk_arena.streaming_helpers as sh
+from talk_arena.db_utils import TinyThreadSafeDB
 
 
 if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
@@ -215,7 +215,7 @@ theme = gr.themes.Soft(
     neutral_hue="stone",
 )
 
-db = TinyDB("user_study.json")
+db = TinyThreadSafeDB("user_study.json")
 with gr.Blocks(theme=theme, fill_height=True) as demo:
     submitted_preferences = gr.State(0)
     state = gr.State(0)
