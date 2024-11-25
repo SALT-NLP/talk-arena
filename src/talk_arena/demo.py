@@ -18,11 +18,10 @@ if gr.NO_RELOAD:
 
     anonymous = True
 
-    model_shorthand = ["typhoon", "diva_3_8b", "qwen2", "diva_1b", "pipe_l3.0", "gemini_1.5f", "gpt4o", "gemini_1.5p"]
+    model_shorthand = ["qwen2", "diva_3_8b", "diva_1b", "pipe_l3.0", "gemini_1.5f", "gpt4o", "gemini_1.5p", "typhoon"]
     all_models = list(range(len(model_shorthand)))
 
     # Generation Setup
-    typhoon_audio, typhoon = sh.typhoon_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
     diva_audio, diva = sh.diva_streaming("WillHeld/DiVA-llama-3-v0-8b")
     qwen2_audio, qwen2 = sh.qwen2_streaming("Qwen/Qwen2-Audio-7B-Instruct")
     diva_smol_audio, diva_smol = sh.diva_streaming("WillHeld/DiVA-llama-3.2-1b")
@@ -30,9 +29,9 @@ if gr.NO_RELOAD:
     gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
     gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
     geminip_audio, geminip_model = sh.geminip_streaming("models/gemini-1.5-pro")
+    typhoon_audio, typhoon_model = sh.typhoon_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
 
     resp_generators = [
-        sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio 8B", anonymous),
         sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous),
         sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
         sh.gradio_gen_factory(diva_smol_audio, "DiVA Llama 3.2 1B", anonymous),
@@ -40,6 +39,7 @@ if gr.NO_RELOAD:
         sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
         sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
         sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
+        sh.gradio_gen_factory(typhoon_audio, "Typhoon", anonymous),
     ]
 
 
