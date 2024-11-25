@@ -13,10 +13,7 @@ class TinyThreadSafeDB:
     def atomic_operation(self):
         """Context manager for thread-safe database operations"""
         with self._lock:
-            try:
-                yield self.db
-            finally:
-                self.db.close()
+            yield self.db
 
     def insert(self, data: dict):
         """Thread-safe insertion of preference data"""
