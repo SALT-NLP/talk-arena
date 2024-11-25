@@ -8,7 +8,7 @@ from transformers import pipeline
 import talk_arena.streaming_helpers as sh
 
 
-if gr.NO_RELOAD:
+if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     asr_pipe = pipeline(
         task="automatic-speech-recognition",
         model="openai/whisper-large-v3-turbo",
@@ -18,38 +18,45 @@ if gr.NO_RELOAD:
 
     anonymous = True
 
-    model_shorthand = [
-        "qwen2",
-        "diva_3_8b",
-        "diva_1b",
-        "pipe_l3.0",
-        "gemini_1.5f",
-        "gpt4o",
-        "gemini_1.5p",
-        "typhoon_audio",
-    ]
-    all_models = list(range(len(model_shorthand)))
-
     # Generation Setup
-    diva_audio, diva = sh.diva_streaming("WillHeld/DiVA-llama-3-v0-8b")
-    qwen2_audio, qwen2 = sh.qwen2_streaming("Qwen/Qwen2-Audio-7B-Instruct")
-    diva_smol_audio, diva_smol = sh.diva_streaming("WillHeld/DiVA-llama-3.2-1b")
-    pipelined_system = sh.asr_streaming(diva.llm_decoder, diva.tokenizer, asr_pipe)
+    diva_audio, diva = sh.api_streaming("WillHeld/DiVA-llama-3-v0-8b")
+    qwen2_audio, qwen2 = sh.api_streaming("Qwen/Qwen2-Audio-7B-Instruct")
+    pipelined_system = sh.asr_streaming("meta-llama/Meta-Llama-3-8B-Instruct", asr_pipe)
     gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
     gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
     geminip_audio, geminip_model = sh.geminip_streaming("models/gemini-1.5-pro")
-    typhoon_audio, typhoon_model = sh.typhoon_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
+    typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
 
-    resp_generators = [
-        sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous),
-        sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
-        sh.gradio_gen_factory(diva_smol_audio, "DiVA Llama 3.2 1B", anonymous),
-        sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
-        sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
-        sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
-        sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
-        sh.gradio_gen_factory(typhoon_audio, "Typhoon", anonymous),
+    competitor_info = [
+        (sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous), "diva_3_8b"),
+        (
+            sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
+            "qwen2",
+        ),
+        (
+            sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
+            "pipe_l3.0",
+        ),
+        (
+            sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
+            "gemini_1.5f",
+        ),
+        (
+            sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
+            "gpt4o",
+        ),
+        (
+            sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
+            "gemini_1.5p",
+        ),
+        (
+            sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio", anonymous),
+            "typhoon_audio",
+        ),
     ]
+    resp_generators = [generator for generator, _ in competitor_info]
+    model_shorthand = [shorthand for _, shorthand in competitor_info]
+    all_models = list(range(len(model_shorthand)))
 
 
 def pairwise_response(audio_input, state, model_order):
@@ -156,7 +163,7 @@ def clear_factory(button_id):
             )
             pref_counter += 1
         counter_text = f"# {pref_counter}/10 Preferences Submitted"
-        if pref_counter >= 10 and False:
+        if pref_counter >= 10 and False:  # Currently Disabled, Manages Prolific Completionx
             code = "PLACEHOLDER"
             counter_text = f"# Completed! Completion Code: {code}"
         counter_text = ""
