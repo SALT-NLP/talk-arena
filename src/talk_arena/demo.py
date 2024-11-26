@@ -1,51 +1,68 @@
+import asyncio
 import random
 
 import gradio as gr
 import xxhash
-from tinydb import TinyDB
 from transformers import pipeline
 
 import talk_arena.streaming_helpers as sh
+from talk_arena.db_utils import TinyThreadSafeDB
 
 
-if gr.NO_RELOAD:
-    asr_pipe = pipeline(
-        task="automatic-speech-recognition",
-        model="openai/whisper-large-v3-turbo",
-        chunk_length_s=30,
-        device="cuda:1",
-    )
+if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
+    # Transcription Disabled for Public Interface
+    # asr_pipe = pipeline(
+    #    task="automatic-speech-recognition",
+    #    model="openai/whisper-large-v3-turbo",
+    #    chunk_length_s=30,
+    #    device="cuda:1",
+    # )
 
     anonymous = True
 
-    model_shorthand = ["qwen2", "diva_3_8b", "diva_1b", "pipe_l3.0", "gemini_1.5f", "gpt4o", "gemini_1.5p", "typhoon"]
-    all_models = list(range(len(model_shorthand)))
-
     # Generation Setup
-    diva_audio, diva = sh.diva_streaming("WillHeld/DiVA-llama-3-v0-8b")
-    qwen2_audio, qwen2 = sh.qwen2_streaming("Qwen/Qwen2-Audio-7B-Instruct")
-    diva_smol_audio, diva_smol = sh.diva_streaming("WillHeld/DiVA-llama-3.2-1b")
-    pipelined_system = sh.asr_streaming(diva.llm_decoder, diva.tokenizer, asr_pipe)
+    diva_audio, diva = sh.api_streaming("WillHeld/DiVA-llama-3-v0-8b")
+    qwen2_audio, qwen2 = sh.api_streaming("Qwen/Qwen2-Audio-7B-Instruct")
+    pipelined_system, pipeline_model = sh.api_streaming("pipeline/meta-llama/Meta-Llama-3-8B-Instruct")
     gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
     gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
-    geminip_audio, geminip_model = sh.geminip_streaming("models/gemini-1.5-pro")
-    typhoon_audio, typhoon_model = sh.typhoon_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
+    geminip_audio, geminip_model = sh.gemini_streaming("models/gemini-1.5-pro")
+    typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-audio-8b-2411")
 
-    resp_generators = [
-        sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous),
-        sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
-        sh.gradio_gen_factory(diva_smol_audio, "DiVA Llama 3.2 1B", anonymous),
-        sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
-        sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
-        sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
-        sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
-        sh.gradio_gen_factory(typhoon_audio, "Typhoon", anonymous),
+    competitor_info = [
+        (sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous), "diva_3_8b"),
+        (
+            sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
+            "qwen2",
+        ),
+        (
+            sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
+            "pipe_l3.0",
+        ),
+        (
+            sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
+            "gemini_1.5f",
+        ),
+        (
+            sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
+            "gpt4o",
+        ),
+        (
+            sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
+            "gemini_1.5p",
+        ),
+        (
+            sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio", anonymous),
+            "typhoon_audio",
+        ),
     ]
+    resp_generators = [generator for generator, _ in competitor_info]
+    model_shorthand = [shorthand for _, shorthand in competitor_info]
+    all_models = list(range(len(model_shorthand)))
 
-
-def pairwise_response(audio_input, state, model_order):
+async def pairwise_response_async(audio_input, state, model_order):
     if audio_input == None:
-        return (
+        raise StopAsyncIteration(
             "",
             "",
             gr.Button(visible=False),
@@ -56,7 +73,6 @@ def pairwise_response(audio_input, state, model_order):
             None,
             None,
         )
-
     spinner_id = 0
     spinners = ["◐ ", "◓ ", "◑", "◒"]
     order = -1
@@ -64,7 +80,7 @@ def pairwise_response(audio_input, state, model_order):
     resps = ["", ""]
     for generator in gen_pair:
         order += 1
-        for local_resp in generator(audio_input, order):
+        async for local_resp in generator(audio_input, order):
             resps[order] = local_resp
             spinner = spinners[spinner_id]
             spinner_id = (spinner_id + 1) % 4
@@ -93,8 +109,8 @@ def pairwise_response(audio_input, state, model_order):
         gr.Button(visible=True),
         responses_complete(state),
         audio_input,
-        gr.Textbox(visible=True),
-        gr.Audio(visible=True),
+        gr.Textbox(visible=False),
+        gr.Audio(visible=False),
     )
 
 
@@ -105,8 +121,7 @@ def on_page_load(state, model_order):
             " or ChatGPT for."
         )
         state = 1
-        if anonymous:
-            model_order = random.sample(all_models, 2)
+        model_order = random.sample(all_models, 2) if anonymous else model_order
     return state, model_order
 
 
@@ -147,7 +162,7 @@ def clear_factory(button_id):
             )
             pref_counter += 1
         counter_text = f"# {pref_counter}/10 Preferences Submitted"
-        if pref_counter >= 10 and False:
+        if pref_counter >= 10 and False:  # Currently Disabled, Manages Prolific Completionx
             code = "PLACEHOLDER"
             counter_text = f"# Completed! Completion Code: {code}"
         counter_text = ""
@@ -199,7 +214,7 @@ theme = gr.themes.Soft(
     neutral_hue="stone",
 )
 
-db = TinyDB("user_study.json")
+db = TinyThreadSafeDB("user_study.json")
 with gr.Blocks(theme=theme, fill_height=True) as demo:
     submitted_preferences = gr.State(0)
     state = gr.State(0)
@@ -249,7 +264,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
                               """
         )
 
-    reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
+    # reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
     audio_input.stop_recording(
         recording_complete,
         [state],
@@ -261,7 +276,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
         btn,
     )
     btn.click(
-        fn=pairwise_response,
+        fn=pairwise_response_async,
         inputs=[audio_input, state, model_order],
         outputs=[btn, out1, out2, best1, best2, tie, state, audio_input, reason, reason_record],
     )
@@ -340,4 +355,4 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     demo.load(fn=on_page_load, inputs=[state, model_order], outputs=[state, model_order])
 
 if __name__ == "__main__":
-    demo.launch(share=True)
+    demo.queue(default_concurrency_limit=40, api_open=False).launch(share=True)
