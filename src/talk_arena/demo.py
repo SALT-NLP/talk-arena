@@ -23,7 +23,7 @@ if gr.NO_RELOAD:
     qwen2_audio, qwen2 = sh.api_streaming("Qwen/Qwen2-Audio-7B-Instruct")
     diva_audio, diva = sh.api_streaming("WillHeld/DiVA-llama-3-v0-8b")
     typhoon_audio, typhoon = sh.api_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
-    pipelined_system = sh.asr_streaming("Qwen/Qwen2-Audio-7B-Instruct", asr_pipe)
+    pipeline_system, pipeline_model = sh.api_streaming("pipeline/meta-llama/Llama-3.1-8B-Instruct")
     gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
     gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
     geminip_audio, geminip_model = sh.geminip_streaming("models/gemini-1.5-pro")
@@ -31,9 +31,8 @@ if gr.NO_RELOAD:
     resp_generators = [
         sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
         sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous),
-        # sh.gradio_gen_factory(diva_smol_audio, "DiVA Llama 3.2 1B", anonymous),
         sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio Llama 3 8B", anonymous),
-        sh.gradio_gen_factory(pipelined_system, "Pipelined Qwen2 8B", anonymous),
+        sh.gradio_gen_factory(pipeline_system, "Pipelined Llama 3 8B", anonymous),
         sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
         sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
         sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
