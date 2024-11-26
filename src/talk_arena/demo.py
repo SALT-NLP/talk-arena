@@ -1,3 +1,4 @@
+import asyncio
 import random
 
 import gradio as gr
@@ -60,8 +61,16 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
 
 
 def pairwise_response(audio_input, state, model_order):
+    loop = asyncio.new_event_loop()
+
+    async_iterator = pairwise_response_async(audio_input, state, model_order)
+    while True:
+        yield loop.run_until_complete(async_iterator.__anext__())
+
+
+async def pairwise_response_async(audio_input, state, model_order):
     if audio_input == None:
-        return (
+        raise StopAsyncIteration(
             "",
             "",
             gr.Button(visible=False),
@@ -72,7 +81,6 @@ def pairwise_response(audio_input, state, model_order):
             None,
             None,
         )
-
     spinner_id = 0
     spinners = ["◐ ", "◓ ", "◑", "◒"]
     order = -1
@@ -80,7 +88,7 @@ def pairwise_response(audio_input, state, model_order):
     resps = ["", ""]
     for generator in gen_pair:
         order += 1
-        for local_resp in generator(audio_input, order):
+        async for local_resp in generator(audio_input, order):
             resps[order] = local_resp
             spinner = spinners[spinner_id]
             spinner_id = (spinner_id + 1) % 4
@@ -121,8 +129,7 @@ def on_page_load(state, model_order):
             " or ChatGPT for."
         )
         state = 1
-        if anonymous:
-            model_order = random.sample(all_models, 2)
+        model_order = random.sample(all_models, 2) if anonymous else model_order
     return state, model_order
 
 
@@ -356,4 +363,5 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     demo.load(fn=on_page_load, inputs=[state, model_order], outputs=[state, model_order])
 
 if __name__ == "__main__":
+    demo.queue(default_concurrency_limit=40, api_open=False)
     demo.launch(share=True)
