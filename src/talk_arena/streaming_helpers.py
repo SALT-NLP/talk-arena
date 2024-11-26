@@ -1,8 +1,8 @@
+import asyncio
 import base64
 import json
 import os
 from pathlib import Path
-import asyncio
 
 import google.generativeai as genai
 import gradio as gr
@@ -13,14 +13,8 @@ import torch
 import xxhash
 from datasets import Audio
 from openai import AsyncOpenAI
-from transformers import (
-    AutoModel,
-    AutoProcessor,
-    Qwen2AudioForConditionalGeneration,
-    TextIteratorStreamer,
-)
+from transformers import AutoModel, AutoProcessor, Qwen2AudioForConditionalGeneration, TextIteratorStreamer
 from transformers.generation import GenerationConfig
-
 
 
 def _get_config_for_model_name(model_id):
@@ -39,7 +33,7 @@ def _get_config_for_model_name(model_id):
         "Qwen/Qwen2-Audio-7B-Instruct": {
             "base_url": "http://localhost:8004/v1",
             "api_key": "empty",
-        }
+        },
     }[model_id]
 
 
@@ -258,7 +252,10 @@ def typhoon_streaming(typhoon_model_str, device="cuda:1"):
         a = resampler.decode_example(resampler.encode_example({"array": y, "sampling_rate": sr}))
         sf.write(f"{x}.wav", a["array"], a["sampling_rate"], format="wav")
         streamer = TextIteratorStreamer(tokenizer)
-        prompt_pattern = "<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<Speech><SpeechHere></Speech> {}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        prompt_pattern = (
+            "<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<Speech><SpeechHere></Speech>"
+            " {}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        )
         response = typhoon_model.generate(
             wav_path=f"{x}.wav",
             prompt=(
@@ -332,6 +329,7 @@ def qwen2_streaming(qwen2_model_str):
         os.remove(f"{x}.wav")
 
     return qwen2_audio, qwen2_model
+
 
 def typhoon_streaming(typhoon_model_str, device="cuda:0"):
     resampler = Audio(sampling_rate=16_000)
