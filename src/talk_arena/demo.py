@@ -11,12 +11,12 @@ from talk_arena.db_utils import TinyThreadSafeDB
 
 if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     # Transcription Disabled for Public Interface
-    #asr_pipe = pipeline(
+    # asr_pipe = pipeline(
     #    task="automatic-speech-recognition",
     #    model="openai/whisper-large-v3-turbo",
     #    chunk_length_s=30,
     #    device="cuda:1",
-    #)
+    # )
 
     anonymous = True
 
@@ -273,7 +273,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
                               """
         )
 
-    #reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
+    # reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
     audio_input.stop_recording(
         recording_complete,
         [state],
