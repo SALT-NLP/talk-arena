@@ -18,7 +18,7 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     )
 
     anonymous = True
-
+    
     # Generation Setup
     diva_audio, diva = sh.api_streaming("WillHeld/DiVA-llama-3-v0-8b")
     qwen2_audio, qwen2 = sh.api_streaming("Qwen/Qwen2-Audio-7B-Instruct")
