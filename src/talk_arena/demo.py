@@ -10,12 +10,13 @@ from talk_arena.db_utils import TinyThreadSafeDB
 
 
 if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
-    asr_pipe = pipeline(
-        task="automatic-speech-recognition",
-        model="openai/whisper-large-v3-turbo",
-        chunk_length_s=30,
-        device="cuda:1",
-    )
+    # Transcription Disabled for Public Interface
+    #asr_pipe = pipeline(
+    #    task="automatic-speech-recognition",
+    #    model="openai/whisper-large-v3-turbo",
+    #    chunk_length_s=30,
+    #    device="cuda:1",
+    #)
 
     anonymous = True
 
@@ -117,8 +118,8 @@ async def pairwise_response_async(audio_input, state, model_order):
         gr.Button(visible=True),
         responses_complete(state),
         audio_input,
-        gr.Textbox(visible=True),
-        gr.Audio(visible=True),
+        gr.Textbox(visible=False),
+        gr.Audio(visible=False),
     )
 
 
@@ -272,7 +273,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
                               """
         )
 
-    reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
+    #reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
     audio_input.stop_recording(
         recording_complete,
         [state],
