@@ -60,15 +60,6 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     model_shorthand = [shorthand for _, shorthand in competitor_info]
     all_models = list(range(len(model_shorthand)))
 
-
-def pairwise_response(audio_input, state, model_order):
-    loop = asyncio.new_event_loop()
-
-    async_iterator = pairwise_response_async(audio_input, state, model_order)
-    while True:
-        yield loop.run_until_complete(async_iterator.__anext__())
-
-
 async def pairwise_response_async(audio_input, state, model_order):
     if audio_input == None:
         raise StopAsyncIteration(
@@ -285,7 +276,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
         btn,
     )
     btn.click(
-        fn=pairwise_response,
+        fn=pairwise_response_async,
         inputs=[audio_input, state, model_order],
         outputs=[btn, out1, out2, best1, best2, tie, state, audio_input, reason, reason_record],
     )
@@ -364,5 +355,4 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     demo.load(fn=on_page_load, inputs=[state, model_order], outputs=[state, model_order])
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=40, api_open=False)
-    demo.launch(share=True)
+    demo.queue(default_concurrency_limit=40, api_open=False).launch(share=True)
