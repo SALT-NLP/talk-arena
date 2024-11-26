@@ -12,16 +12,12 @@ import soundfile as sf
 import torch
 import xxhash
 from datasets import Audio
-from openai import AsyncOpenAI, OpenAI
+from openai import AsyncOpenAI
 from transformers import (
     AutoModel,
-    AutoModelForCausalLM,
     AutoProcessor,
-    AutoTokenizer,
-    LlamaForCausalLM,
     Qwen2AudioForConditionalGeneration,
     TextIteratorStreamer,
-    WhisperForConditionalGeneration,
 )
 from transformers.generation import GenerationConfig
 
@@ -30,10 +26,19 @@ def _get_config_for_model_name(model_id):
     if "API_MODEL_CONFIG" in os.environ:
         return json.loads(os.environ["API_MODEL_CONFIG"])[model_id]
     return {
-        "WillHeld/DiVA-llama-3.2-1b": {"base_url": "http://localhost:8002/v1", "api_key": "empty"},
-        "scb10x/llama-3-typhoon-v1.5-8b-audio-preview": {"base_url": "http://localhost:8003/v1", "api_key": "empty"},
-        "WillHeld/DiVA-llama-3-v0-8b": {"base_url": "http://localhost:8004/v1", "api_key": "empty"},
-        "Qwen/Qwen2-Audio-7B-Instruct": {"base_url": "http://localhost:8005/v1", "api_key": "empty"},
+        "pipeline/meta-llama/Meta-Llama-3-8B-Instruct": {"base_url": "http://localhost:8001/v1", "api_key": "empty"},
+        "scb10x/llama-3-typhoon-v1.5-8b-audio-preview": {
+            "base_url": "http://localhost:8002/v1",
+            "api_key": "empty",
+        },
+        "WillHeld/DiVA-llama-3-v0-8b": {
+            "base_url": "http://localhost:8003/v1",
+            "api_key": "empty",
+        },
+        "Qwen/Qwen2-Audio-7B-Instruct": {
+            "base_url": "http://localhost:8004/v1",
+            "api_key": "empty",
+        },
     }[model_id]
 
 

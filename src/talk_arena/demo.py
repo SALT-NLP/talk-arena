@@ -22,10 +22,10 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     # Generation Setup
     diva_audio, diva = sh.api_streaming("WillHeld/DiVA-llama-3-v0-8b")
     qwen2_audio, qwen2 = sh.api_streaming("Qwen/Qwen2-Audio-7B-Instruct")
-    pipelined_system = sh.asr_streaming("meta-llama/Meta-Llama-3-8B-Instruct", asr_pipe)
+    pipelined_system, pipeline_model = sh.api_streaming("pipeline/meta-llama/Meta-Llama-3-8B-Instruct")
     gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
     gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
-    geminip_audio, geminip_model = sh.geminip_streaming("models/gemini-1.5-pro")
+    geminip_audio, geminip_model = sh.gemini_streaming("models/gemini-1.5-pro")
     typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
 
     competitor_info = [
