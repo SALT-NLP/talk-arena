@@ -28,7 +28,7 @@ def _get_config_for_model_name(model_id):
         return json.loads(os.environ["API_MODEL_CONFIG"])[model_id]
     return {
         "pipeline/meta-llama/Meta-Llama-3-8B-Instruct": {"base_url": "http://localhost:8001/v1", "api_key": "empty"},
-        "scb10x/llama-3-typhoon-v1.5-8b-audio-preview": {
+        "scb10x/llama-3-typhoon-audio-8b-2411": {
             "base_url": "http://localhost:8002/v1",
             "api_key": "empty",
         },

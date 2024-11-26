@@ -26,7 +26,7 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
     gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
     geminip_audio, geminip_model = sh.gemini_streaming("models/gemini-1.5-pro")
-    typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
+    typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-audio-8b-2411")
 
     competitor_info = [
         (sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous), "diva_3_8b"),
