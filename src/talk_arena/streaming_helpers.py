@@ -22,6 +22,7 @@ from transformers import (
 from transformers.generation import GenerationConfig
 
 
+
 def _get_config_for_model_name(model_id):
     if "API_MODEL_CONFIG" in os.environ:
         return json.loads(os.environ["API_MODEL_CONFIG"])[model_id]
@@ -38,7 +39,7 @@ def _get_config_for_model_name(model_id):
         "Qwen/Qwen2-Audio-7B-Instruct": {
             "base_url": "http://localhost:8004/v1",
             "api_key": "empty",
-        },
+        }
     }[model_id]
 
 
