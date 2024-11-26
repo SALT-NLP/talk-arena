@@ -1,48 +1,76 @@
+import asyncio
 import random
 
 import gradio as gr
 import xxhash
-from tinydb import TinyDB
 from transformers import pipeline
 
 import talk_arena.streaming_helpers as sh
+from talk_arena.db_utils import TinyThreadSafeDB
 
 
-if gr.NO_RELOAD:
+if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     asr_pipe = pipeline(
         task="automatic-speech-recognition",
         model="openai/whisper-large-v3-turbo",
         chunk_length_s=30,
+        device="cuda:1",
     )
 
     anonymous = True
-    model_shorthand = ["qwen2", "diva_3_8b", "typhoon_audio", "pipe_q2", "gemini_1.5f", "gpt4o", "gemini_1.5p"]
-    all_models = list(range(len(model_shorthand)))
 
     # Generation Setup
-    qwen2_audio, qwen2 = sh.api_streaming("Qwen/Qwen2-Audio-7B-Instruct")
     diva_audio, diva = sh.api_streaming("WillHeld/DiVA-llama-3-v0-8b")
-    typhoon_audio, typhoon = sh.api_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
-    pipeline_system, pipeline_model = sh.api_streaming("pipeline/meta-llama/Llama-3.1-8B-Instruct")
+    qwen2_audio, qwen2 = sh.api_streaming("Qwen/Qwen2-Audio-7B-Instruct")
+    pipelined_system, pipeline_model = sh.api_streaming("pipeline/meta-llama/Meta-Llama-3-8B-Instruct")
     gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
     gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
-    geminip_audio, geminip_model = sh.geminip_streaming("models/gemini-1.5-pro")
+    geminip_audio, geminip_model = sh.gemini_streaming("models/gemini-1.5-pro")
+    typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-v1.5-8b-audio-preview")
 
-    resp_generators = [
-        sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
-        sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous),
-        sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio Llama 3 8B", anonymous),
-        sh.gradio_gen_factory(pipeline_system, "Pipelined Llama 3 8B", anonymous),
-        sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
-        sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
-        sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
+    competitor_info = [
+        (sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous), "diva_3_8b"),
+        (
+            sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
+            "qwen2",
+        ),
+        (
+            sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
+            "pipe_l3.0",
+        ),
+        (
+            sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
+            "gemini_1.5f",
+        ),
+        (
+            sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
+            "gpt4o",
+        ),
+        (
+            sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
+            "gemini_1.5p",
+        ),
+        (
+            sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio", anonymous),
+            "typhoon_audio",
+        ),
     ]
-    assert len(model_shorthand) == len(resp_generators)
+    resp_generators = [generator for generator, _ in competitor_info]
+    model_shorthand = [shorthand for _, shorthand in competitor_info]
+    all_models = list(range(len(model_shorthand)))
 
 
 def pairwise_response(audio_input, state, model_order):
+    loop = asyncio.new_event_loop()
+
+    async_iterator = pairwise_response_async(audio_input, state, model_order)
+    while True:
+        yield loop.run_until_complete(async_iterator.__anext__())
+
+
+async def pairwise_response_async(audio_input, state, model_order):
     if audio_input == None:
-        return (
+        raise StopAsyncIteration(
             "",
             "",
             gr.Button(visible=False),
@@ -53,7 +81,6 @@ def pairwise_response(audio_input, state, model_order):
             None,
             None,
         )
-
     spinner_id = 0
     spinners = ["◐ ", "◓ ", "◑", "◒"]
     order = -1
@@ -61,7 +88,7 @@ def pairwise_response(audio_input, state, model_order):
     resps = ["", ""]
     for generator in gen_pair:
         order += 1
-        for local_resp in generator(audio_input, order):
+        async for local_resp in generator(audio_input, order):
             resps[order] = local_resp
             spinner = spinners[spinner_id]
             spinner_id = (spinner_id + 1) % 4
@@ -102,8 +129,7 @@ def on_page_load(state, model_order):
             " or ChatGPT for."
         )
         state = 1
-        if anonymous:
-            model_order = random.sample(all_models, 2)
+        model_order = random.sample(all_models, 2) if anonymous else model_order
     return state, model_order
 
 
@@ -144,7 +170,7 @@ def clear_factory(button_id):
             )
             pref_counter += 1
         counter_text = f"# {pref_counter}/10 Preferences Submitted"
-        if pref_counter >= 10 and False:
+        if pref_counter >= 10 and False:  # Currently Disabled, Manages Prolific Completionx
             code = "PLACEHOLDER"
             counter_text = f"# Completed! Completion Code: {code}"
         counter_text = ""
@@ -196,7 +222,7 @@ theme = gr.themes.Soft(
     neutral_hue="stone",
 )
 
-db = TinyDB("user_study.json")
+db = TinyThreadSafeDB("user_study.json")
 with gr.Blocks(theme=theme, fill_height=True) as demo:
     submitted_preferences = gr.State(0)
     state = gr.State(0)
@@ -337,4 +363,5 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     demo.load(fn=on_page_load, inputs=[state, model_order], outputs=[state, model_order])
 
 if __name__ == "__main__":
+    demo.queue(default_concurrency_limit=40, api_open=False)
     demo.launch(share=True)
