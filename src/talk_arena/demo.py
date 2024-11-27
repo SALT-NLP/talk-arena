@@ -1,5 +1,6 @@
 import asyncio
 import random
+import time
 
 import gradio as gr
 import xxhash
@@ -60,6 +61,7 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     model_shorthand = [shorthand for _, shorthand in competitor_info]
     all_models = list(range(len(model_shorthand)))
 
+
 async def pairwise_response_async(audio_input, state, model_order):
     if audio_input == None:
         raise StopAsyncIteration(
@@ -75,12 +77,17 @@ async def pairwise_response_async(audio_input, state, model_order):
         )
     spinner_id = 0
     spinners = ["◐ ", "◓ ", "◑", "◒"]
-    order = -1
     gen_pair = [resp_generators[model_order[0]], resp_generators[model_order[1]]]
+    latencies = [{}, {}]  # Store timing info for each model
     resps = ["", ""]
-    for generator in gen_pair:
-        order += 1
+    for order, generator in enumerate(gen_pair):
+        start_time = time.time()
+        first_token = True
+
         async for local_resp in generator(audio_input, order):
+            if first_token:
+                latencies[order]["time_to_first_token"] = time.time() - start_time
+                first_token = False
             resps[order] = local_resp
             spinner = spinners[spinner_id]
             spinner_id = (spinner_id + 1) % 4
@@ -100,6 +107,8 @@ async def pairwise_response_async(audio_input, state, model_order):
                 None,
                 None,
             )
+        latencies[order]["total_time"] = time.time() - start_time
+    print(latencies)
     yield (
         gr.Button(value="Click to compare models!", interactive=True, variant="primary"),
         resps[0],
@@ -148,19 +157,28 @@ def responses_complete(state):
 
 
 def clear_factory(button_id):
-    def clear(audio_input, model_order, pref_counter, reasoning):
+    def clear(audio_input, model_order, pref_counter, reasoning, latency):
+        x = xxhash.xxh32(bytes(y)).hexdigest()
         if button_id != None:
             sr, y = audio_input
             db.insert(
                 {
-                    "audio_hash": xxhash.xxh32(bytes(y)).hexdigest(),
+                    "audio_hash": x,
                     "outcome": button_id,
                     "model_a": model_shorthand[model_order[0]],
                     "model_b": model_shorthand[model_order[1]],
                     "why": reasoning,
+                    "model_a_latency": latency[0],
+                    "model_b_latency": latency[1],
                 }
             )
             pref_counter += 1
+
+        try:
+            os.remove(f"{x}.wav")
+        except:
+            # file already deleted, this is just a failsafe to assure data is cleared
+            pass
         counter_text = f"# {pref_counter}/10 Preferences Submitted"
         if pref_counter >= 10 and False:  # Currently Disabled, Manages Prolific Completionx
             code = "PLACEHOLDER"
@@ -219,6 +237,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     submitted_preferences = gr.State(0)
     state = gr.State(0)
     model_order = gr.State([])
+    latency = gr.State([])
     with gr.Row():
         counter_text = gr.Markdown(
             ""
@@ -278,11 +297,11 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     btn.click(
         fn=pairwise_response_async,
         inputs=[audio_input, state, model_order],
-        outputs=[btn, out1, out2, best1, best2, tie, state, audio_input, reason, reason_record],
+        outputs=[btn, out1, out2, best1, best2, tie, state, audio_input, reason, reason_record, latency],
     )
     best1.click(
         fn=clear_factory(0),
-        inputs=[audio_input, model_order, submitted_preferences, reason],
+        inputs=[audio_input, model_order, submitted_preferences, reason, latency],
         outputs=[
             model_order,
             btn,
@@ -300,7 +319,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     )
     tie.click(
         fn=clear_factory(0.5),
-        inputs=[audio_input, model_order, submitted_preferences, reason],
+        inputs=[audio_input, model_order, submitted_preferences, reason, latency],
         outputs=[
             model_order,
             btn,
@@ -318,7 +337,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     )
     best2.click(
         fn=clear_factory(1),
-        inputs=[audio_input, model_order, submitted_preferences, reason],
+        inputs=[audio_input, model_order, submitted_preferences, reason, latency],
         outputs=[
             model_order,
             btn,
@@ -336,7 +355,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     )
     audio_input.clear(
         clear_factory(None),
-        [audio_input, model_order, submitted_preferences, reason],
+        [audio_input, model_order, submitted_preferences, reason, latency],
         [
             model_order,
             btn,
