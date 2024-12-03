@@ -1,5 +1,6 @@
 import asyncio
 import random
+import textwrap
 import time
 
 import gradio as gr
@@ -74,6 +75,7 @@ async def pairwise_response_async(audio_input, state, model_order):
             audio_input,
             None,
             None,
+            None,
         )
     spinner_id = 0
     spinners = ["◐ ", "◓ ", "◑", "◒"]
@@ -107,6 +109,7 @@ async def pairwise_response_async(audio_input, state, model_order):
                 audio_input,
                 None,
                 None,
+                latencies,
             )
         latencies[order]["total_time"] = time.time() - start_time
         latencies[order]["response_length"] = total_length
@@ -122,6 +125,7 @@ async def pairwise_response_async(audio_input, state, model_order):
         audio_input,
         gr.Textbox(visible=False),
         gr.Audio(visible=False),
+        latencies,
     )
 
 
@@ -252,9 +256,9 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
 
     with gr.Row(equal_height=True):
         with gr.Column(scale=1):
-            out1 = gr.Textbox(visible=False)
+            out1 = gr.Textbox(visible=False, max_lines=5, lines=5)
         with gr.Column(scale=1):
-            out2 = gr.Textbox(visible=False)
+            out2 = gr.Textbox(visible=False, max_lines=5, lines=5)
 
     with gr.Row(equal_height=True):
         reason = gr.Textbox(label="[Optional] Explain Your Preferences", visible=False, scale=4)
@@ -276,13 +280,41 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
 
     with gr.Row():
         contact = gr.Markdown(
-            """
+            textwrap.dedent(
+                """
+        <details>
+        <summary>Rubric To Judge Model Outputs</summary>
+        Please select the response which is better among the two candidates by considering the following dimensions:
+        
+        - Naturalness: Evaluates how closely the response resembles human language, focusing on fluency, grammar, and appropriate tone to ensure it sounds natural.
+        
+        - Coherence: Assesses the logical flow and clarity of ideas, ensuring that each part of the response contributes meaningfully and is internally consistent.
+        
+        - Groundedness: Ensure the response is related to the input and is based on accurate, reliable information, avoiding unsupported or speculative statements to enhance credibility.
+        
+        - Harmlessness: Choose the response that sounds most similar to what a peaceful, ethical, and respectful person would say.
+        
+        - Helpfulness: Choose the response that has the most actionable information relevant to the inputs provided or which most completely follows the instructions given.
+        </details>
+        <details>
+        <summary>Contact Information and IRB Info</summary>
+        
+        ## What We Store
+        
+        This platform does not store any information about you or your queries for further research or release. All recordings are erased after you submit your votes and vote data is stored only in aggregate to understand model performance.
+
+        This platform sends data to third-party APIs from OpenAI and Google. In both cases, we utilize paid APIs for which the terms of service dictate that your data will not be used for training or stored for more than 30 days.
+
+        Based on the lack of identifiable information and the focus on model rankings, the Stanford IRB has determined that this public platform is not human subects research as defined in 45 CFR 46.102(e).
+
         ## CONTACT INFORMATION:
 
-        *Questions:* If you have any questions, concerns or complaints about this research, its procedures, risks and benefits, contact the Protocol Director, Diyi Yang, diyiy@cs.stanford.edu.
+        *Questions:* If you have any questions, concerns or complaints about this research, its procedures, risks and benefits, contact the Diyi Yang, diyiy@cs.stanford.edu. 
 
         *Independent Contact:* If you are not satisfied with how this study is being conducted, or if you have any concerns, complaints, or general questions about the research or your rights as a participant, please contact the Stanford Institutional Review Board (IRB) to speak to someone independent of the research team at 650-723-2480 or toll free at 1-866-680-2906, or email at irbnonmed@stanford.edu. You can also write to the Stanford IRB, Stanford University, 1705 El Camino Real, Palo Alto, CA 94306.
-                              """
+         </details>
+            """
+            )
         )
 
     # reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
