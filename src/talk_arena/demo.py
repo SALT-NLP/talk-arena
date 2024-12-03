@@ -160,9 +160,9 @@ def responses_complete(state):
 
 def clear_factory(button_id):
     def clear(audio_input, model_order, pref_counter, reasoning, latency):
-        x = xxhash.xxh32(bytes(y)).hexdigest()
         if button_id != None:
             sr, y = audio_input
+            x = xxhash.xxh32(bytes(y)).hexdigest()
             db.insert(
                 {
                     "audio_hash": x,
