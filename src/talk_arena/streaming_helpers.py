@@ -40,13 +40,17 @@ def _get_config_for_model_name(model_id):
 def gradio_gen_factory(streaming_fn, model_name, anonymous):
     async def gen_from(audio_input, order):
         with torch.no_grad():
+            prev_resp = ""
             async for resp in streaming_fn(audio_input):
-                my_resp = gr.Textbox(
-                    value=resp,
-                    visible=True,
-                    label=model_name if not anonymous else f"Model {order+1}",
-                )
-                yield my_resp
+                for char in range(len(prev_resp), len(resp)):
+                    my_resp = gr.Textbox(
+                        value=resp[: char + 1],
+                        visible=True,
+                        label=model_name if not anonymous else f"Model {order+1}",
+                    )
+                    yield my_resp
+                    await asyncio.sleep(0.001)
+                prev_resp = resp
 
     return gen_from
 
@@ -206,7 +210,7 @@ def api_streaming(model_id):
                     yield "".join(text_response)
             os.remove(f"{x}.wav")
         except:
-            raise StopAsyncIteration("error")
+            raise StopAsyncIteration(f"error for {model_id}")
 
     return get_chat_response, client
 
