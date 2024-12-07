@@ -139,6 +139,9 @@ async def pairwise_response_async(audio_input, state, model_order):
                 None,
                 latencies,
             )
+        latencies[order]["total_time"] = time.time() - start_time
+        latencies[order]["response_length"] = total_length
+    print(latencies)
     yield (
         gr.Button(value="Click to compare models!", interactive=True, variant="primary"),
         resps[0],
