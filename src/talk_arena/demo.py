@@ -32,34 +32,32 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-audio-8b-2411")
 
     competitor_info = [
-        (sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous), "diva_3_8b"),
+        (sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous), "diva_3_8b", "DiVA Llama 3 8B"),
+        (sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous), "qwen2", "Qwen 2 Audio"),
         (
-            sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous),
-            "qwen2",
+        sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
+        "pipe_l3.0", "Pipelined Llama 3 8B"
         ),
         (
-            sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
-            "pipe_l3.0",
-        ),
-        (
-            sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
-            "gemini_1.5f",
+        sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
+        "gemini_1.5f", "Gemini 1.5 Flash"
         ),
         (
             sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
-            "gpt4o",
+            "gpt4o", "GPT-4o"
         ),
         (
             sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
-            "gemini_1.5p",
+            "gemini_1.5p", "Gemini 1.5 Pro"
         ),
         (
-            sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio", anonymous),
-            "typhoon_audio",
+        sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio", anonymous),
+        "typhoon_audio", "Typhoon Audio"
         ),
     ]
-    resp_generators = [generator for generator, _ in competitor_info]
-    model_shorthand = [shorthand for _, shorthand in competitor_info]
+    resp_generators = [generator for generator, _, _ in competitor_info]
+    model_shorthand = [shorthand for _, shorthand, _ in competitor_info]
+    model_name = [full_name for _, _, full_name in competitor_info]
     all_models = list(range(len(model_shorthand)))
 
 
@@ -79,21 +77,51 @@ async def pairwise_response_async(audio_input, state, model_order):
         )
     spinner_id = 0
     spinners = ["◐ ", "◓ ", "◑", "◒"]
+    spinner = spinners[0]
     gen_pair = [resp_generators[model_order[0]], resp_generators[model_order[1]]]
     latencies = [{}, {}]  # Store timing info for each model
     resps = ["", ""]
+    error_in_model = False
     for order, generator in enumerate(gen_pair):
         start_time = time.time()
         first_token = True
         total_length = 0
-        async for local_resp in generator(audio_input, order):
-            total_length += 1
-            if first_token:
-                latencies[order]["time_to_first_token"] = time.time() - start_time
-                first_token = False
-            resps[order] = local_resp
-            spinner = spinners[spinner_id]
-            spinner_id = (spinner_id + 1) % 4
+        try:
+            async for local_resp in generator(audio_input, order):
+                total_length += 1
+                if first_token:
+                    latencies[order]["time_to_first_token"] = time.time() - start_time
+                    first_token = False
+                resps[order] = local_resp
+                spinner = spinners[spinner_id]
+                spinner_id = (spinner_id + 1) % 4
+                yield (
+                    gr.Button(
+                        value=spinner + " Generating Responses " + spinner,
+                        interactive=False,
+                        variant="primary",
+                    ),
+                    resps[0],
+                    resps[1],
+                    gr.Button(visible=False),
+                    gr.Button(visible=False),
+                    gr.Button(visible=False),
+                    state,
+                    audio_input,
+                    None,
+                    None,
+                    latencies,
+                )
+            latencies[order]["total_time"] = time.time() - start_time
+            latencies[order]["response_length"] = total_length
+        except:
+            error_in_model = True
+            resps[order] = gr.Textbox(
+                info=f"<strong>Error thrown by Model {order+1} API</strong>",
+                value="" if first_token else resps[order]._constructor_args[0]["value"],
+                visible=True,
+                label=f"Model {order+1}",
+            )
             yield (
                 gr.Button(
                     value=spinner + " Generating Responses " + spinner,
@@ -118,9 +146,9 @@ async def pairwise_response_async(audio_input, state, model_order):
         gr.Button(value="Click to compare models!", interactive=True, variant="primary"),
         resps[0],
         resps[1],
-        gr.Button(visible=True),
-        gr.Button(visible=True),
-        gr.Button(visible=True),
+        gr.Button(visible=not error_in_model),
+        gr.Button(visible=not error_in_model),
+        gr.Button(visible=not error_in_model),
         responses_complete(state),
         audio_input,
         gr.Textbox(visible=False),
@@ -131,10 +159,10 @@ async def pairwise_response_async(audio_input, state, model_order):
 
 def on_page_load(state, model_order):
     if state == 0:
-        gr.Info(
-            "Record something you'd say to an AI Assistant! Think about what you usually use Siri, Google Assistant,"
-            " or ChatGPT for."
-        )
+        # gr.Info(
+        #    "Record something you'd say to an AI Assistant! Think about what you usually use Siri, Google Assistant,"
+        #    " or ChatGPT for."
+        # )
         state = 1
         model_order = random.sample(all_models, 2) if anonymous else model_order
     return state, model_order
@@ -142,9 +170,9 @@ def on_page_load(state, model_order):
 
 def recording_complete(state):
     if state == 1:
-        gr.Info(
-            "Once you submit your recording, you'll receive responses from different models. This might take a second."
-        )
+        # gr.Info(
+        #    "Once you submit your recording, you'll receive responses from different models. This might take a second."
+        # )
         state = 2
     return (
         gr.Button(value="Click to compare models!", interactive=True, variant="primary"),
@@ -164,6 +192,8 @@ def responses_complete(state):
 
 def clear_factory(button_id):
     def clear(audio_input, model_order, pref_counter, reasoning, latency):
+        textbox1 = gr.Textbox(visible=False)
+        textbox2 = gr.Textbox(visible=False)
         if button_id != None:
             sr, y = audio_input
             x = xxhash.xxh32(bytes(y)).hexdigest()
@@ -179,8 +209,17 @@ def clear_factory(button_id):
                 }
             )
             pref_counter += 1
+            model_a = model_name[model_order[0]]
+            model_b = model_name[model_order[1]]
+            response = f"Previous round showed {model_a} on the left and {model_b} on the right!"
+            if button_id in [0, 1]:
+                winning_model = model_name[model_order[button_id]]
+                response += f" You picked {winning_model} as the better option."
+            gr.Warning(response, title="Model Reveal!")
 
         try:
+            sr, y = audio_input
+            x = xxhash.xxh32(bytes(y)).hexdigest()
             os.remove(f"{x}.wav")
         except:
             # file already deleted, this is just a failsafe to assure data is cleared
@@ -202,8 +241,8 @@ def clear_factory(button_id):
             gr.Button(visible=False),
             gr.Button(visible=False),
             None,
-            gr.Textbox(visible=False),
-            gr.Textbox(visible=False),
+            textbox1,
+            textbox2,
             pref_counter,
             counter_text,
             gr.Textbox(visible=False),
@@ -238,7 +277,9 @@ theme = gr.themes.Soft(
     neutral_hue="stone",
 )
 
-db = TinyThreadSafeDB("user_study.json")
+db = TinyThreadSafeDB("talk_arena_1206_launch.json")
+
+
 with gr.Blocks(theme=theme, fill_height=True) as demo:
     submitted_preferences = gr.State(0)
     state = gr.State(0)
@@ -256,9 +297,9 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
 
     with gr.Row(equal_height=True):
         with gr.Column(scale=1):
-            out1 = gr.Textbox(visible=False, max_lines=5, lines=5)
+            out1 = gr.Textbox(visible=False, lines=5, max_lines=5, autoscroll=False)
         with gr.Column(scale=1):
-            out2 = gr.Textbox(visible=False, max_lines=5, lines=5)
+            out2 = gr.Textbox(visible=False, lines=5, max_lines=5, autoscroll=False)
 
     with gr.Row(equal_height=True):
         reason = gr.Textbox(label="[Optional] Explain Your Preferences", visible=False, scale=4)
@@ -408,4 +449,4 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     demo.load(fn=on_page_load, inputs=[state, model_order], outputs=[state, model_order])
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=40, api_open=False).launch(share=True)
+    demo.queue(default_concurrency_limit=40, api_open=False).launch(share=True, ssr_mode=False)
