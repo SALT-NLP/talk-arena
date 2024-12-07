@@ -27,7 +27,7 @@ as well as the DiVA paper for which this code was originally developed:
 ```bibtex
 @misc{DiVA,
       title={{D}istilling an {E}nd-to-{E}nd {V}oice {A}ssistant {W}ithout {I}nstruction {T}raining {D}ata}, 
-      author={William Held and Ella Li and Michael Ryan and Weiyan Shi and Yanzhe Zhang and Diyi Yang},
+      author={William Held and Minzhi Li and Michael Ryan and Weiyan Shi and Yanzhe Zhang and Diyi Yang},
       year={2024},
       eprint={2410.02678},
       archivePrefix={arXiv},
