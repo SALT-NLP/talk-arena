@@ -70,6 +70,7 @@ async def pairwise_response_async(audio_input, state, model_order):
     gen_pair = [resp_generators[model_order[0]], resp_generators[model_order[1]]]
     latencies = [{}, {}]  # Store timing info for each model
     resps = [gr.Textbox(value="", info="", visible=False), gr.Textbox(value="", info="", visible=False)]
+
     error_in_model = False
     for order, generator in enumerate(gen_pair):
         start_time = time.time()
@@ -197,13 +198,14 @@ def clear_factory(button_id):
             pref_counter += 1
             model_a = model_name[model_order[0]]
             model_b = model_name[model_order[1]]
-            # response = f"Previous round showed {model_a} on the left and {model_b} on the right!"
-            # if button_id in [0, 1]:
-            #    winning_model = model_name[model_order[button_id]]
-            #    response += f" You picked {winning_model} as the better option."
-            # gr.Warning(response, title="Model Reveal!")
-            textbox1 = gr.Textbox(visible=True, info=f"<strong style='color: #53565A'>Response from {model_a}</strong><p>Time-to-First-Character: {latency[0]['time_to_first_token']:.2f} ms, Time Per Character: {latency[0]['total_time']/latency[0]['response_length']:.2f} ms</p>")
-            textbox2 = gr.Textbox(visible=True, info=f"<strong style='color: #53565A'>Response from {model_b}</strong><p>Time-to-First-Character: {latency[1]['time_to_first_token']:.2f} ms, Time Per Character: {latency[1]['total_time']/latency[1]['response_length']:.2f} ms</p>")
+            textbox1 = gr.Textbox(
+                visible=True,
+                info=f"<strong style='color: #53565A'>Response from {model_a}</strong><p>Time-to-First-Character: {latency[0]['time_to_first_token']:.2f} ms, Time Per Character: {latency[0]['total_time']/latency[0]['response_length']:.2f} ms</p>",
+            )
+            textbox2 = gr.Textbox(
+                visible=True,
+                info=f"<strong style='color: #53565A'>Response from {model_b}</strong><p>Time-to-First-Character: {latency[1]['time_to_first_token']:.2f} ms, Time Per Character: {latency[1]['total_time']/latency[1]['response_length']:.2f} ms</p>",
+            )
 
         try:
             sr, y = audio_input
