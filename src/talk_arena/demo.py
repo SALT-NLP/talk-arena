@@ -35,25 +35,14 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
         (sh.gradio_gen_factory(diva_audio, "DiVA Llama 3 8B", anonymous), "diva_3_8b", "DiVA Llama 3 8B"),
         (sh.gradio_gen_factory(qwen2_audio, "Qwen 2", anonymous), "qwen2", "Qwen 2 Audio"),
         (
-        sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
-        "pipe_l3.0", "Pipelined Llama 3 8B"
+            sh.gradio_gen_factory(pipelined_system, "Pipelined Llama 3 8B", anonymous),
+            "pipe_l3.0",
+            "Pipelined Llama 3 8B",
         ),
-        (
-        sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous),
-        "gemini_1.5f", "Gemini 1.5 Flash"
-        ),
-        (
-            sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous),
-            "gpt4o", "GPT-4o"
-        ),
-        (
-            sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous),
-            "gemini_1.5p", "Gemini 1.5 Pro"
-        ),
-        (
-        sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio", anonymous),
-        "typhoon_audio", "Typhoon Audio"
-        ),
+        (sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous), "gemini_1.5f", "Gemini 1.5 Flash"),
+        (sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous), "gpt4o", "GPT-4o"),
+        (sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous), "gemini_1.5p", "Gemini 1.5 Pro"),
+        (sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio", anonymous), "typhoon_audio", "Typhoon Audio"),
     ]
     resp_generators = [generator for generator, _, _ in competitor_info]
     model_shorthand = [shorthand for _, shorthand, _ in competitor_info]
@@ -80,7 +69,7 @@ async def pairwise_response_async(audio_input, state, model_order):
     spinner = spinners[0]
     gen_pair = [resp_generators[model_order[0]], resp_generators[model_order[1]]]
     latencies = [{}, {}]  # Store timing info for each model
-    resps = ["", ""]
+    resps = [gr.Textbox(value="", info="", visible=False), gr.Textbox(value="", info="", visible=False)]
     error_in_model = False
     for order, generator in enumerate(gen_pair):
         start_time = time.time()
@@ -140,7 +129,7 @@ async def pairwise_response_async(audio_input, state, model_order):
                 latencies,
             )
     yield (
-        gr.Button(value="Click to compare models!", interactive=True, variant="primary"),
+        gr.Button(value="Vote for which model is better!", interactive=False, variant="primary"),
         resps[0],
         resps[1],
         gr.Button(visible=not error_in_model),
@@ -172,7 +161,7 @@ def recording_complete(state):
         # )
         state = 2
     return (
-        gr.Button(value="Click to compare models!", interactive=True, variant="primary"),
+        gr.Button(value="Starting Generation", interactive=False, variant="primary"),
         state,
     )
 
@@ -208,11 +197,13 @@ def clear_factory(button_id):
             pref_counter += 1
             model_a = model_name[model_order[0]]
             model_b = model_name[model_order[1]]
-            response = f"Previous round showed {model_a} on the left and {model_b} on the right!"
-            if button_id in [0, 1]:
-                winning_model = model_name[model_order[button_id]]
-                response += f" You picked {winning_model} as the better option."
-            gr.Warning(response, title="Model Reveal!")
+            # response = f"Previous round showed {model_a} on the left and {model_b} on the right!"
+            # if button_id in [0, 1]:
+            #    winning_model = model_name[model_order[button_id]]
+            #    response += f" You picked {winning_model} as the better option."
+            # gr.Warning(response, title="Model Reveal!")
+            textbox1 = gr.Textbox(visible=True, info=f"<strong style='color: #53565A'>Response from {model_a}</strong><p>Time-to-First-Character: {latency[0]['time_to_first_token']:.2f} ms, Time Per Character: {latency[0]['total_time']/latency[0]['response_length']:.2f} ms</p>")
+            textbox2 = gr.Textbox(visible=True, info=f"<strong style='color: #53565A'>Response from {model_b}</strong><p>Time-to-First-Character: {latency[1]['time_to_first_token']:.2f} ms, Time Per Character: {latency[1]['total_time']/latency[1]['response_length']:.2f} ms</p>")
 
         try:
             sr, y = audio_input
@@ -231,7 +222,7 @@ def clear_factory(button_id):
         return (
             model_order,
             gr.Button(
-                value="Record Audio to Submit!",
+                value="Record Audio to Submit Again!",
                 interactive=False,
             ),
             gr.Button(visible=False),
@@ -317,59 +308,22 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
         best2 = gr.Button(value="Model 2 is better", visible=False)
 
     with gr.Row():
-        contact = gr.Markdown(
-            textwrap.dedent(
-                """
-        <details>
-        <summary>Rubric To Judge Model Outputs</summary>
-        Please select the response which is better among the two candidates by considering the following dimensions:
-        
-        - Naturalness: Evaluates how closely the response resembles human language, focusing on fluency, grammar, and appropriate tone to ensure it sounds natural.
-        
-        - Coherence: Assesses the logical flow and clarity of ideas, ensuring that each part of the response contributes meaningfully and is internally consistent.
-        
-        - Groundedness: Ensure the response is related to the input and is based on accurate, reliable information, avoiding unsupported or speculative statements to enhance credibility.
-        
-        - Harmlessness: Choose the response that sounds most similar to what a peaceful, ethical, and respectful person would say.
-        
-        - Helpfulness: Choose the response that has the most actionable information relevant to the inputs provided or which most completely follows the instructions given.
-        </details>
-        <details>
-        <summary>Contact Information and IRB Info</summary>
-        
-        ## What We Store
-        
-        This platform does not store any information about you or your queries for further research or release. All recordings are erased after you submit your votes and vote data is stored only in aggregate to understand model performance.
-
-        This platform sends data to third-party APIs from OpenAI and Google. In both cases, we utilize paid APIs for which the terms of service dictate that your data will not be used for training or stored for more than 30 days.
-
-        Based on the lack of identifiable information and the focus on model rankings, the Stanford IRB has determined that this public platform is not human subects research as defined in 45 CFR 46.102(e).
-
-        ## CONTACT INFORMATION:
-
-        *Questions:* If you have any questions, concerns or complaints about this research, its procedures, risks and benefits, contact the Diyi Yang, diyiy@cs.stanford.edu. 
-
-        *Independent Contact:* If you are not satisfied with how this study is being conducted, or if you have any concerns, complaints, or general questions about the research or your rights as a participant, please contact the Stanford Institutional Review Board (IRB) to speak to someone independent of the research team at 650-723-2480 or toll free at 1-866-680-2906, or email at irbnonmed@stanford.edu. You can also write to the Stanford IRB, Stanford University, 1705 El Camino Real, Palo Alto, CA 94306.
-         </details>
-            """
-            )
-        )
+        contact = gr.Markdown("")
 
     # reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
     audio_input.stop_recording(
         recording_complete,
         [state],
         [btn, state],
+    ).then(
+        fn=pairwise_response_async,
+        inputs=[audio_input, state, model_order],
+        outputs=[btn, out1, out2, best1, best2, tie, state, audio_input, reason, reason_record, latency],
     )
     audio_input.start_recording(
         lambda: gr.Button(value="Uploading Audio to Cloud", interactive=False, variant="primary"),
         None,
         btn,
-    )
-    btn.click(
-        fn=pairwise_response_async,
-        inputs=[audio_input, state, model_order],
-        outputs=[btn, out1, out2, best1, best2, tie, state, audio_input, reason, reason_record, latency],
     )
     best1.click(
         fn=clear_factory(0),
@@ -446,4 +400,4 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     demo.load(fn=on_page_load, inputs=[state, model_order], outputs=[state, model_order])
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=40, api_open=False).launch(share=True, ssr_mode=False)
+    demo.queue(default_concurrency_limit=40, api_open=False).launch(share=False, ssr_mode=False)

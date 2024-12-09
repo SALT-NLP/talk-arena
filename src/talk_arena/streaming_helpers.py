@@ -45,6 +45,7 @@ def gradio_gen_factory(streaming_fn, model_name, anonymous):
                 for char in range(len(prev_resp), len(resp)):
                     my_resp = gr.Textbox(
                         value=resp[: char + 1],
+                        info="",
                         visible=True,
                         label=model_name if not anonymous else f"Model {order+1}",
                     )
