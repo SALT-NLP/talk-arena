@@ -178,13 +178,13 @@ def responses_complete(state):
 
 
 def clear_factory(button_id):
-    def clear(audio_input, model_order, pref_counter, reasoning, latency):
+    async def clear(audio_input, model_order, pref_counter, reasoning, latency):
         textbox1 = gr.Textbox(visible=False)
         textbox2 = gr.Textbox(visible=False)
         if button_id != None:
             sr, y = audio_input
             x = xxhash.xxh32(bytes(y)).hexdigest()
-            db.insert(
+            await db.insert(
                 {
                     "audio_hash": x,
                     "outcome": button_id,
@@ -402,4 +402,4 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     demo.load(fn=on_page_load, inputs=[state, model_order], outputs=[state, model_order])
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=40, api_open=False).launch(share=False, ssr_mode=False)
+    demo.queue(default_concurrency_limit=40, api_open=False).launch(share=True, ssr_mode=False)
