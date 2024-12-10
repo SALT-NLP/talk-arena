@@ -1,10 +1,11 @@
+import uuid
+from asyncio import Lock as ALock
 from contextlib import asynccontextmanager
 from threading import Lock as TLock
-from asyncio import Lock as ALock
 
 from tinydb import TinyDB
 from tinydb.table import Table as TinyDBTable
-import uuid
+
 
 class UUIDTable(TinyDBTable):
     document_id_class = uuid.UUID

@@ -315,7 +315,6 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     with gr.Row():
         contact = gr.Markdown("")
 
-
     # reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
     audio_input.stop_recording(
         recording_complete,
