@@ -2499,6 +2499,448 @@
         "response_length": 697
       }
     },
+    "4798f1fc-50e9-4148-bda1-f4fe5c97e1d0": {
+      "audio_hash": "0e05bd78",
+      "outcome": 0,
+      "model_a": "gemini_1.5p",
+      "model_b": "qwen2",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.194610595703125,
+        "total_time": 1.564683437347412,
+        "response_length": 58
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.44138622283935547,
+        "total_time": 0.731236457824707,
+        "response_length": 34
+      }
+    },
+    "16bfa828-ae3a-4896-897a-cb04102f7556": {
+      "audio_hash": "a0e1cff7",
+      "outcome": 1,
+      "model_a": "pipe_l3.0",
+      "model_b": "gemini_1.5f",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.0438971519470215,
+        "total_time": 8.833102703094482,
+        "response_length": 850
+      },
+      "model_b_latency": {
+        "time_to_first_token": 1.040468454360962,
+        "total_time": 4.171466112136841,
+        "response_length": 326
+      }
+    },
+    "af5e6c55-7c91-47d1-8186-423e2a8107a1": {
+      "audio_hash": "5fc61202",
+      "outcome": 1,
+      "model_a": "qwen2",
+      "model_b": "typhoon_audio",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.5245249271392822,
+        "total_time": 0.8371717929840088,
+        "response_length": 36
+      },
+      "model_b_latency": {
+        "time_to_first_token": 5.553623914718628,
+        "total_time": 7.878762245178223,
+        "response_length": 263
+      }
+    },
+    "7965a1cd-f821-4506-bd9a-d2f3ffc242b4": {
+      "audio_hash": "6ddee04d",
+      "outcome": 1,
+      "model_a": "gemini_1.5f",
+      "model_b": "diva_3_8b",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.0529282093048096,
+        "total_time": 7.788423299789429,
+        "response_length": 851
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.7623677253723145,
+        "total_time": 18.368459939956665,
+        "response_length": 2245
+      }
+    },
+    "7e959a81-dcb8-4845-93ce-85e1c35269c0": {
+      "audio_hash": "564b91de",
+      "outcome": 1,
+      "model_a": "gemini_1.5f",
+      "model_b": "gemini_1.5p",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.9998347759246826,
+        "total_time": 8.436035633087158,
+        "response_length": 830
+      },
+      "model_b_latency": {
+        "time_to_first_token": 2.0271341800689697,
+        "total_time": 9.043392896652222,
+        "response_length": 698
+      }
+    },
+    "1cb58c9d-6124-4bfd-b2ce-26317b2cd8db": {
+      "audio_hash": "e61a7dab",
+      "outcome": 0,
+      "model_a": "diva_3_8b",
+      "model_b": "typhoon_audio",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.7897090911865234,
+        "total_time": 16.545243501663208,
+        "response_length": 1756
+      },
+      "model_b_latency": {
+        "time_to_first_token": 1.5811712741851807,
+        "total_time": 2.8319966793060303,
+        "response_length": 155
+      }
+    },
+    "6098902a-7a80-4101-9c2c-4fbe2dc03bf7": {
+      "audio_hash": "bd9a34ce",
+      "outcome": 1,
+      "model_a": "typhoon_audio",
+      "model_b": "pipe_l3.0",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.0072576999664307,
+        "total_time": 1.587101697921753,
+        "response_length": 61
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.8666641712188721,
+        "total_time": 3.919565439224243,
+        "response_length": 295
+      }
+    },
+    "332c46fd-a653-4aea-9a55-175f296e2f49": {
+      "audio_hash": "41d1f69e",
+      "outcome": 0.5,
+      "model_a": "typhoon_audio",
+      "model_b": "pipe_l3.0",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.3591902256011963,
+        "total_time": 2.128075361251831,
+        "response_length": 99
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.7628142833709717,
+        "total_time": 16.16882586479187,
+        "response_length": 1790
+      }
+    },
+    "c59eeadc-bcc9-48f6-b63c-a629931b6fd9": {
+      "audio_hash": "0ef47aec",
+      "outcome": 1,
+      "model_a": "pipe_l3.0",
+      "model_b": "gemini_1.5f",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.7708642482757568,
+        "total_time": 1.6825447082519531,
+        "response_length": 96
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.6774346828460693,
+        "total_time": 1.4086992740631104,
+        "response_length": 109
+      }
+    },
+    "0724166b-9d8e-4740-9c7d-791bd8b520ef": {
+      "audio_hash": "cd9c0956",
+      "outcome": 0.5,
+      "model_a": "gemini_1.5f",
+      "model_b": "gpt4o",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.8441629409790039,
+        "total_time": 2.189131736755371,
+        "response_length": 173
+      },
+      "model_b_latency": {
+        "time_to_first_token": 6.152589559555054,
+        "total_time": 7.632797956466675,
+        "response_length": 186
+      }
+    },
+    "526f5e4a-4be2-4f47-9e1f-b3e89de1c83e": {
+      "audio_hash": "909cd63d",
+      "outcome": 0,
+      "model_a": "gemini_1.5p",
+      "model_b": "diva_3_8b",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.576477289199829,
+        "total_time": 2.6515042781829834,
+        "response_length": 150
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.9083719253540039,
+        "total_time": 1.256692886352539,
+        "response_length": 41
+      }
+    },
+    "7c924961-5d84-43e7-80cf-de680082d792": {
+      "audio_hash": "ba3da2b9",
+      "outcome": 1,
+      "model_a": "diva_3_8b",
+      "model_b": "qwen2",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.7032413482666016,
+        "total_time": 1.056588888168335,
+        "response_length": 35
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.441586971282959,
+        "total_time": 0.6886320114135742,
+        "response_length": 29
+      }
+    },
+    "907ee10c-ec1d-45eb-877d-08b3e1f609d8": {
+      "audio_hash": "d5def8a7",
+      "outcome": 0,
+      "model_a": "gemini_1.5p",
+      "model_b": "diva_3_8b",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.819002389907837,
+        "total_time": 3.072721004486084,
+        "response_length": 149
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.7236804962158203,
+        "total_time": 1.1735119819641113,
+        "response_length": 47
+      }
+    },
+    "c1ab5d89-b668-4031-ac3b-ae17d6c7460b": {
+      "audio_hash": "571c848c",
+      "outcome": 1,
+      "model_a": "diva_3_8b",
+      "model_b": "gemini_1.5f",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.7941603660583496,
+        "total_time": 7.757767915725708,
+        "response_length": 752
+      },
+      "model_b_latency": {
+        "time_to_first_token": 1.062011480331421,
+        "total_time": 4.13991117477417,
+        "response_length": 331
+      }
+    },
+    "27b2af37-9eda-4234-bfbe-6953a085877c": {
+      "audio_hash": "96077078",
+      "outcome": 0.5,
+      "model_a": "gemini_1.5p",
+      "model_b": "gemini_1.5f",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.9983994960784912,
+        "total_time": 1.1820917129516602,
+        "response_length": 25
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.7035861015319824,
+        "total_time": 1.236604928970337,
+        "response_length": 73
+      }
+    },
+    "a7990af2-8940-4662-a103-cd1ba193d20b": {
+      "audio_hash": "c0dee844",
+      "outcome": 0,
+      "model_a": "diva_3_8b",
+      "model_b": "typhoon_audio",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.9317727088928223,
+        "total_time": 11.062914609909058,
+        "response_length": 938
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.785536527633667,
+        "total_time": 1.0407726764678955,
+        "response_length": 23
+      }
+    },
+    "25333a7a-edb1-4a25-9130-38f898c4cba8": {
+      "audio_hash": "4094d8f0",
+      "outcome": 0.5,
+      "model_a": "typhoon_audio",
+      "model_b": "gemini_1.5p",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 2.5674448013305664,
+        "total_time": 6.057765007019043,
+        "response_length": 194
+      },
+      "model_b_latency": {
+        "time_to_first_token": 2.0647828578948975,
+        "total_time": 4.879037141799927,
+        "response_length": 266
+      }
+    },
+    "7aea8a26-37fa-459d-abb5-6ce50c5bb041": {
+      "audio_hash": "c52df184",
+      "outcome": 0,
+      "model_a": "gpt4o",
+      "model_b": "qwen2",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 13.452533721923828,
+        "total_time": 21.234699726104736,
+        "response_length": 842
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.5728466510772705,
+        "total_time": 12.439274787902832,
+        "response_length": 1178
+      }
+    },
+    "6d19a56d-2aa4-488c-9700-334af2337631": {
+      "audio_hash": "1e32b735",
+      "outcome": 1,
+      "model_a": "typhoon_audio",
+      "model_b": "gpt4o",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.5156335830688477,
+        "total_time": 1.7600970268249512,
+        "response_length": 36
+      },
+      "model_b_latency": {
+        "time_to_first_token": 3.2607696056365967,
+        "total_time": 3.5119259357452393,
+        "response_length": 38
+      }
+    },
+    "7ded00b8-e9dc-4a56-8ef2-83fc2165d01e": {
+      "audio_hash": "c5c3502e",
+      "outcome": 0,
+      "model_a": "gemini_1.5f",
+      "model_b": "pipe_l3.0",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.9444448947906494,
+        "total_time": 4.62808895111084,
+        "response_length": 237
+      },
+      "model_b_latency": {
+        "time_to_first_token": 1.209496259689331,
+        "total_time": 14.023486375808716,
+        "response_length": 846
+      }
+    },
+    "d8ae04ad-f054-4a94-a12f-977da1b12bd6": {
+      "audio_hash": "76ca1673",
+      "outcome": 0.5,
+      "model_a": "typhoon_audio",
+      "model_b": "pipe_l3.0",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.3624298572540283,
+        "total_time": 1.888789176940918,
+        "response_length": 62
+      },
+      "model_b_latency": {
+        "time_to_first_token": 1.0173399448394775,
+        "total_time": 5.545074462890625,
+        "response_length": 104
+      }
+    },
+    "556bd73e-6414-4f5f-8c28-b56cf26b63df": {
+      "audio_hash": "6a8f6732",
+      "outcome": 1,
+      "model_a": "diva_3_8b",
+      "model_b": "gpt4o",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 0.9356105327606201,
+        "total_time": 3.093329429626465,
+        "response_length": 240
+      },
+      "model_b_latency": {
+        "time_to_first_token": 7.66303014755249,
+        "total_time": 9.06110954284668,
+        "response_length": 188
+      }
+    },
+    "2d455e7a-5cc5-43c8-b6e7-20b82990c5e4": {
+      "audio_hash": "3c5d5188",
+      "outcome": 1,
+      "model_a": "gpt4o",
+      "model_b": "diva_3_8b",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 6.830700159072876,
+        "total_time": 10.683558464050293,
+        "response_length": 249
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.903853178024292,
+        "total_time": 8.737921953201294,
+        "response_length": 503
+      }
+    },
+    "c517c552-127f-445e-b2f8-acd3a8aa5c71": {
+      "audio_hash": "cd7a7f44",
+      "outcome": 0.5,
+      "model_a": "gemini_1.5f",
+      "model_b": "typhoon_audio",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 1.2529265880584717,
+        "total_time": 20.513397455215454,
+        "response_length": 2121
+      },
+      "model_b_latency": {
+        "time_to_first_token": 5.74419903755188,
+        "total_time": 11.398940801620483,
+        "response_length": 624
+      }
+    },
+    "3df48fe7-91b2-4c8a-a07b-adf707dd55d4": {
+      "audio_hash": "7939d993",
+      "outcome": 1,
+      "model_a": "typhoon_audio",
+      "model_b": "gemini_1.5p",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 2.26271653175354,
+        "total_time": 3.575829029083252,
+        "response_length": 122
+      },
+      "model_b_latency": {
+        "time_to_first_token": 2.1282503604888916,
+        "total_time": 6.650059700012207,
+        "response_length": 399
+      }
+    },
+    "2b972471-9917-4df8-8ae2-355660734949": {
+      "audio_hash": "b6772494",
+      "outcome": 1,
+      "model_a": "typhoon_audio",
+      "model_b": "qwen2",
+      "why": null,
+      "model_a_latency": {
+        "time_to_first_token": 3.6359546184539795,
+        "total_time": 7.024043798446655,
+        "response_length": 245
+      },
+      "model_b_latency": {
+        "time_to_first_token": 0.6673388481140137,
+        "total_time": 3.8973782062530518,
+        "response_length": 244
+      }
+    },
     "a97b4c4a-73b9-4748-8cdb-802cd0df985b": {
       "audio_hash": "cf301f7c",
       "outcome": 0.5,
