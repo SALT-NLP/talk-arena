@@ -1,4 +1,4 @@
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from threading import Lock as TLock
 from asyncio import Lock as ALock
 
@@ -23,7 +23,7 @@ class TinyThreadSafeDB:
         self._lock1 = TLock()
         self._lock2 = ALock()
 
-    @contextmanager
+    @asynccontextmanager
     async def atomic_operation(self):
         """Context manager for thread-safe database operations"""
         with self._lock1:
