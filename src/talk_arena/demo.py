@@ -129,6 +129,9 @@ async def pairwise_response_async(audio_input, state, model_order):
                 None,
                 latencies,
             )
+        latencies[order]["total_time"] = time.time() - start_time
+        latencies[order]["response_length"] = total_length
+    print(latencies)
     yield (
         gr.Button(value="Vote for which model is better!", interactive=False, variant="primary"),
         resps[0],
@@ -311,6 +314,7 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
 
     with gr.Row():
         contact = gr.Markdown("")
+
 
     # reason_record.stop_recording(transcribe, inputs=[reason, reason_record], outputs=[reason, reason_record])
     audio_input.stop_recording(
