@@ -9,7 +9,18 @@ from transformers import pipeline
 
 import talk_arena.streaming_helpers as sh
 from talk_arena.db_utils import TinyThreadSafeDB
+from dotenv import load_dotenv
 
+import argparse
+
+load_dotenv()
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Talk Arena Demo")
+    parser.add_argument("--free_only", action="store_true", help="Only use free models")
+    return parser.parse_args()
+
+args = parse_args()
 
 if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     # Transcription Disabled for Public Interface
@@ -26,9 +37,10 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
     diva_audio, diva = sh.api_streaming("WillHeld/DiVA-llama-3-v0-8b")
     qwen2_audio, qwen2 = sh.api_streaming("Qwen/Qwen2-Audio-7B-Instruct")
     pipelined_system, pipeline_model = sh.api_streaming("pipeline/meta-llama/Meta-Llama-3-8B-Instruct")
-    gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
-    gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
-    geminip_audio, geminip_model = sh.gemini_streaming("models/gemini-1.5-pro")
+    if not args.free_only:
+        gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
+        gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
+        geminip_audio, geminip_model = sh.gemini_streaming("models/gemini-1.5-pro")
     typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-audio-8b-2411")
 
     competitor_info = [
@@ -39,11 +51,16 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
             "pipe_l3.0",
             "Pipelined Llama 3 8B",
         ),
-        (sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous), "gemini_1.5f", "Gemini 1.5 Flash"),
-        (sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous), "gpt4o", "GPT-4o"),
-        (sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous), "gemini_1.5p", "Gemini 1.5 Pro"),
         (sh.gradio_gen_factory(typhoon_audio, "Typhoon Audio", anonymous), "typhoon_audio", "Typhoon Audio"),
     ]
+    # Add paid models if flag is not set
+    if not args.free_only:
+        competitor_info += [
+            (sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous), "gemini_1.5f", "Gemini 1.5 Flash"),
+            (sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous), "gpt4o", "GPT-4o"),
+            (sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous), "gemini_1.5p", "Gemini 1.5 Pro"),
+        ]
+
     resp_generators = [generator for generator, _, _ in competitor_info]
     model_shorthand = [shorthand for _, shorthand, _ in competitor_info]
     model_name = [full_name for _, _, full_name in competitor_info]

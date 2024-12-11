@@ -1,0 +1,3 @@
+.env
+.gradio/certificate.pem
+*.pyc
