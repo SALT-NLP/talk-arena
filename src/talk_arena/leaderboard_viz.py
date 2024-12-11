@@ -154,7 +154,7 @@ def create_win_rate_plot(per_model_wins):
             bordercolor="lightgray",
             borderwidth=1,
         ),
-        margin=dict(l=10, r=10, t=10, b=10),  # Balanced margins
+        margin=dict(l=10, r=10, t=0, b=10),  # Balanced margins
         hoverlabel=dict(bgcolor="white", font_size=14, bordercolor="gray"),
     )
 
@@ -306,7 +306,7 @@ def create_bt_plot(bootstrap_ratings):
             bordercolor="lightgray",
             borderwidth=1,
         ),
-        margin=dict(l=10, r=10, t=10, b=10),  # Balanced margins
+        margin=dict(l=10, r=10, t=0, b=10),  # Balanced margins
     )
 
     fig.update_xaxes(showgrid=False)
@@ -314,28 +314,29 @@ def create_bt_plot(bootstrap_ratings):
 
     return fig
 
+def viz_factory(force=False):
+    async def process_and_visualize():
+        """Main function to process JSON data and create visualizations."""
+        global WR_PLOT, BT_PLOT
+        if WR_PLOT is not None and BT_PLOT is not None and not force:
+            return WR_PLOT, BT_PLOT, gr.Markdown()
+        try:
+            # Read JSON data
+            json_data = open("/home/wheld3/talk-arena/live_votes.json", "r").read()
 
-async def process_and_visualize():
-    """Main function to process JSON data and create visualizations."""
-    global WR_PLOT, BT_PLOT
-    if WR_PLOT is not None and BT_PLOT is not None:
-        return WR_PLOT, BT_PLOT, gr.Markdown()
-    try:
-        # Read JSON data
-        json_data = open("/home/wheld3/talk-arena/live_votes.json", "r").read()
+            # Calculate win rates and create win rate plot
+            win_rates = calculate_win_rates(json_data)
+            WR_PLOT = create_win_rate_plot(win_rates)
 
-        # Calculate win rates and create win rate plot
-        win_rates = calculate_win_rates(json_data)
-        WR_PLOT = create_win_rate_plot(win_rates)
+            # Calculate Bradley-Terry ratings and create BT plot
+            bootstrap_ratings = compute_bootstrap_bt(json_data, num_round=10000)
+            BT_PLOT = create_bt_plot(bootstrap_ratings)
 
-        # Calculate Bradley-Terry ratings and create BT plot
-        bootstrap_ratings = compute_bootstrap_bt(json_data, num_round=10000)
-        BT_PLOT = create_bt_plot(bootstrap_ratings)
+            return WR_PLOT, BT_PLOT, gr.Markdown(value=f"## Live Updated (Last Refresh: {get_aesthetic_timestamp()} PST)")
 
-        return WR_PLOT, BT_PLOT, gr.Markdown(value=f"## Live Updated (Last Refresh: {get_aesthetic_timestamp()} PST)")
-
-    except Exception as e:
-        raise gr.Error(f"Error processing file: {str(e)}")
+        except Exception as e:
+            raise gr.Error(f"Error processing file: {str(e)}")
+    return process_and_visualize
 
 
 # Create Gradio interface
@@ -346,10 +347,10 @@ with gr.Blocks(title="Talk Arena Leaderboard Analysis") as demo:
     with gr.Row():
         win_rate_plot = gr.Plot(label="Win Rates")
 
-    demo.load(fn=process_and_visualize, inputs=[], outputs=[win_rate_plot, bt_plot, last_updated])
+    demo.load(fn=viz_factory(force=False), inputs=[], outputs=[win_rate_plot, bt_plot, last_updated])
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=10, api_open=False).launch(share=True, server_port=8001)
+    demo.queue(default_concurrency_limit=10, api_open=False).launch(share=True, server_port=8000)
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(func=process_and_visualize, trigger="interval", seconds=300)
+    scheduler.add_job(func=viz_factory(force=True), trigger="interval", seconds=300)
     scheduler.start()
