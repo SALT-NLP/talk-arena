@@ -1,3 +1,9 @@
+---
+title: talk-arena
+app_file: src/talk_arena/demo.py
+sdk: gradio
+sdk_version: 5.8.0
+---
 # Running your Own Speech Arena
 
 ```sh

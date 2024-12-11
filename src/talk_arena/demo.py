@@ -270,7 +270,7 @@ theme = gr.themes.Soft(
     neutral_hue="stone",
 )
 
-db = TinyThreadSafeDB("talk_arena_1206_launch.json")
+db = TinyThreadSafeDB("live_votes.json")
 
 
 with gr.Blocks(theme=theme, fill_height=True) as demo:

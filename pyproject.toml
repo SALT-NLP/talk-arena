@@ -20,6 +20,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 dependencies = [
+    "apscheduler",
     "transformers==4.45.2",
     "transformers-stream-generator==0.0.5",
     "accelerate>=0.26.0",

@@ -4,6 +4,9 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Tuple
 from zoneinfo import ZoneInfo
+import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 
 import gradio as gr
 import numpy as np
@@ -38,6 +41,7 @@ NAME_MAPPING = {
     "gemini_1.5p": "Gemini 1.5 Pro",
     "typhoon_audio": "Typhoon Audio",
 }
+
 
 
 def get_aesthetic_timestamp():
@@ -311,11 +315,11 @@ def create_bt_plot(bootstrap_ratings):
     return fig
 
 
-def process_and_visualize():
+async def process_and_visualize():
     """Main function to process JSON data and create visualizations."""
     global WR_PLOT, BT_PLOT
     if WR_PLOT is not None and BT_PLOT is not None:
-        return WR_PLOT, BT_PLOT
+        return WR_PLOT, BT_PLOT, gr.Markdown()
     try:
         # Read JSON data
         json_data = open("/home/wheld3/talk-arena/live_votes.json", "r").read()
@@ -328,7 +332,7 @@ def process_and_visualize():
         bootstrap_ratings = compute_bootstrap_bt(json_data, num_round=10000)
         BT_PLOT = create_bt_plot(bootstrap_ratings)
 
-        return WR_PLOT, BT_PLOT
+        return WR_PLOT, BT_PLOT, gr.Markdown(value=f"## Live Updated (Last Refresh: {get_aesthetic_timestamp()} PST)")
 
     except Exception as e:
         raise gr.Error(f"Error processing file: {str(e)}")
@@ -336,13 +340,16 @@ def process_and_visualize():
 
 # Create Gradio interface
 with gr.Blocks(title="Talk Arena Leaderboard Analysis") as demo:
-    gr.Markdown(value=f"## Live Updated (Last Refresh: {get_aesthetic_timestamp()} PST)")
+    last_updated = gr.Markdown(value=f"## Live Updated (Last Refresh: {get_aesthetic_timestamp()} PST)")
     with gr.Row():
         bt_plot = gr.Plot(label="Bradley-Terry Ratings")
     with gr.Row():
         win_rate_plot = gr.Plot(label="Win Rates")
 
-    demo.load(fn=process_and_visualize, inputs=[], outputs=[win_rate_plot, bt_plot])
+    demo.load(fn=process_and_visualize, inputs=[], outputs=[win_rate_plot, bt_plot, last_updated])
 
 if __name__ == "__main__":
-    demo.launch(share=True, server_port=8000)
+    demo.queue(default_concurrency_limit=10, api_open=False).launch(share=True, server_port=8001)
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(func=process_and_visualize, trigger="interval", seconds=300)
+    scheduler.start()
