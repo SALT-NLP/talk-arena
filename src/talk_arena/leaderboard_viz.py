@@ -1,17 +1,16 @@
 import json
 import random
+import textwrap
 from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Tuple
 from zoneinfo import ZoneInfo
-import asyncio
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
 
 import gradio as gr
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from apscheduler.schedulers.background import BackgroundScheduler
 from scipy.optimize import minimize
 from scipy.special import expit
 
@@ -32,6 +31,7 @@ COLORS = [
 ]
 WR_PLOT = None
 BT_PLOT = None
+UPDATE_TIME = None
 NAME_MAPPING = {
     "diva_3_8b": "DiVA Llama 3 8B",
     "qwen2": "Qwen 2 Audio",
@@ -41,7 +41,6 @@ NAME_MAPPING = {
     "gemini_1.5p": "Gemini 1.5 Pro",
     "typhoon_audio": "Typhoon Audio",
 }
-
 
 
 def get_aesthetic_timestamp():
@@ -80,8 +79,10 @@ def calculate_win_rates(json_data):
 
     model_wins = defaultdict(int)
     total_matches = defaultdict(int)
+    total_votes = 0
 
     for value in data["_default"].values():
+        total_votes += 1
         if value["outcome"] == 0:
             model_wins[value["model_a"]] += 1
         elif value["outcome"] == 1:
@@ -101,7 +102,7 @@ def calculate_win_rates(json_data):
         lower, upper = bootstrap_ci(wins_data)
         per_model_wins[model] = {"win_rate": win_rate, "95_lower": lower, "95_upper": upper}
 
-    return per_model_wins
+    return per_model_wins, total_votes
 
 
 def create_win_rate_plot(per_model_wins):
@@ -134,7 +135,7 @@ def create_win_rate_plot(per_model_wins):
         showlegend=False,
         plot_bgcolor="white",
         title={
-            "text": "Talk Arena Live Win Rates with 95% Confidence Intervals",
+            "text": "Talk Arena Live Win Rates<br>with 95% Confidence Intervals",
             "y": 0.95,
             "x": 0.5,
             "xanchor": "center",
@@ -143,7 +144,7 @@ def create_win_rate_plot(per_model_wins):
         xaxis_title="Model",
         yaxis_title="Win Rate (%)",
         bargap=0.2,
-        yaxis=dict(tickformat=",.1f%", tickmode="auto", range=[0, 100], gridcolor="lightgray", griddash="dash"),
+        yaxis=dict(tickformat=",.1f%", tickmode="auto", range=[0, 101], gridcolor="#C9CCD1", griddash="dash", gridwidth=2),
         legend=dict(
             orientation="h",  # Make legend horizontal
             yanchor="bottom",
@@ -151,7 +152,7 @@ def create_win_rate_plot(per_model_wins):
             xanchor="center",
             x=0.5,  # Center horizontally
             bgcolor="rgba(255, 255, 255, 0.8)",
-            bordercolor="lightgray",
+            bordercolor="#C9CCD1",
             borderwidth=1,
         ),
         margin=dict(l=10, r=10, t=0, b=10),  # Balanced margins
@@ -159,7 +160,6 @@ def create_win_rate_plot(per_model_wins):
     )
 
     fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash")
 
     return fig
 
@@ -266,17 +266,22 @@ def compute_bootstrap_bt(
     df_ratings = pd.DataFrame(ratings_list, columns=models)
     return df_ratings[df_ratings.median().sort_values(ascending=False).index]
 
-
 def create_bt_plot(bootstrap_ratings):
     """Create Bradley-Terry ratings plot using Plotly."""
     fig = go.Figure()
-
+    min_samp = 10000
+    max_samp = -1
     for i, col in enumerate(bootstrap_ratings.columns):
+        samples = sorted(bootstrap_ratings[col])
+        samples = [sample for i, sample in enumerate(samples) if i%100 == 0 or i == len(samples)-1]
+        min_samp = min(min(samples), min_samp)
+        max_samp = max(max(samples), max_samp)
         fig.add_trace(
             go.Violin(
-                y=bootstrap_ratings[col],
+                y=[int(sample) for sample in samples],
                 line_color=COLORS[i % len(COLORS)],
                 name=NAME_MAPPING.get(col, col),
+                opacity=1,
                 box_visible=False,
                 meanline_visible=False,
             )
@@ -287,7 +292,7 @@ def create_bt_plot(bootstrap_ratings):
         showlegend=False,
         plot_bgcolor="white",
         title={
-            "text": "Talk Arena Live Bradley-Terry Ratings with 95% Confidence Intervals",
+            "text": "Talk Arena Live Bradley-Terry Ratings<br>with Bootstrapped Variance",
             "y": 0.9,
             "x": 0.5,
             "xanchor": "center",
@@ -295,7 +300,7 @@ def create_bt_plot(bootstrap_ratings):
         },
         xaxis_title="Model",
         yaxis_title="Rating",
-        yaxis=dict(gridcolor="lightgray", griddash="dash"),
+        yaxis=dict(gridcolor="#C9CCD1", range=[min_samp - 10, max_samp + 10], griddash="dash"),
         legend=dict(
             orientation="h",  # Make legend horizontal
             yanchor="bottom",
@@ -303,54 +308,82 @@ def create_bt_plot(bootstrap_ratings):
             xanchor="center",
             x=0.5,  # Center horizontally
             bgcolor="rgba(255, 255, 255, 0.8)",
-            bordercolor="lightgray",
+            bordercolor="#C9CCD1",
             borderwidth=1,
         ),
         margin=dict(l=10, r=10, t=0, b=10),  # Balanced margins
     )
 
     fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(showgrid=True, gridwidth=1)
+    fig.update_yaxes(showgrid=True, gridwidth=2)
 
     return fig
 
+
 def viz_factory(force=False):
-    async def process_and_visualize():
+    def process_and_visualize():
         """Main function to process JSON data and create visualizations."""
-        global WR_PLOT, BT_PLOT
+        global WR_PLOT, BT_PLOT, UPDATE_TIME
         if WR_PLOT is not None and BT_PLOT is not None and not force:
-            return WR_PLOT, BT_PLOT, gr.Markdown()
+            return WR_PLOT, BT_PLOT, UPDATE_TIME
         try:
             # Read JSON data
             json_data = open("/home/wheld3/talk-arena/live_votes.json", "r").read()
-
             # Calculate win rates and create win rate plot
-            win_rates = calculate_win_rates(json_data)
+            win_rates, total_votes = calculate_win_rates(json_data)
             WR_PLOT = create_win_rate_plot(win_rates)
 
             # Calculate Bradley-Terry ratings and create BT plot
             bootstrap_ratings = compute_bootstrap_bt(json_data, num_round=10000)
             BT_PLOT = create_bt_plot(bootstrap_ratings)
-
-            return WR_PLOT, BT_PLOT, gr.Markdown(value=f"## Live Updated (Last Refresh: {get_aesthetic_timestamp()} PST)")
+            print(BT_PLOT)
+            UPDATE_TIME = gr.Markdown(
+                value=textwrap.dedent(
+                    f"""
+                    ## Live Updated
+                    ### (Last Refresh: {get_aesthetic_timestamp()} PST, Total Votes: {total_votes})
+                    """
+                )
+            )
+            return WR_PLOT, BT_PLOT, UPDATE_TIME
 
         except Exception as e:
             raise gr.Error(f"Error processing file: {str(e)}")
+
     return process_and_visualize
 
 
-# Create Gradio interface
-with gr.Blocks(title="Talk Arena Leaderboard Analysis") as demo:
-    last_updated = gr.Markdown(value=f"## Live Updated (Last Refresh: {get_aesthetic_timestamp()} PST)")
-    with gr.Row():
-        bt_plot = gr.Plot(label="Bradley-Terry Ratings")
-    with gr.Row():
-        win_rate_plot = gr.Plot(label="Win Rates")
+theme = gr.themes.Soft(
+    primary_hue=gr.themes.Color(
+        c100="#82000019",
+        c200="#82000033",
+        c300="#8200004c",
+        c400="#82000066",
+        c50="#8200007f",
+        c500="#8200007f",
+        c600="#82000099",
+        c700="#820000b2",
+        c800="#820000cc",
+        c900="#820000e5",
+        c950="#820000f2",
+    ),
+    secondary_hue="rose",
+    neutral_hue="stone",
+)
 
-    demo.load(fn=viz_factory(force=False), inputs=[], outputs=[win_rate_plot, bt_plot, last_updated])
+# Create Gradio interface
+with gr.Blocks(title="Talk Arena Leaderboard Analysis", theme=theme) as demo:
+    viz_factory(force=True)()
+    last_updated = UPDATE_TIME
+    with gr.Row():
+        bt_plot = gr.Plot(label="Bradley-Terry Ratings", value=BT_PLOT)
+    with gr.Row():
+        win_rate_plot = gr.Plot(label="Win Rates", value=WR_PLOT)
+
+    demo.load(fn=viz_factory(force=False), inputs=[], outputs=[win_rate_plot, bt_plot, last_updated], show_progress="minimal")
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=10, api_open=False).launch(share=True, server_port=8000)
-    scheduler = AsyncIOScheduler()
+    scheduler = BackgroundScheduler()
     scheduler.add_job(func=viz_factory(force=True), trigger="interval", seconds=300)
     scheduler.start()
+    demo.queue(default_concurrency_limit=10, api_open=False).launch(share=True, server_port=8000, node_port=8002)
