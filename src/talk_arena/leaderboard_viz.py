@@ -1,7 +1,9 @@
 import json
 import random
 from collections import defaultdict
+from datetime import datetime
 from typing import Dict, List, Tuple
+from zoneinfo import ZoneInfo
 
 import gradio as gr
 import numpy as np
@@ -36,6 +38,26 @@ NAME_MAPPING = {
     "gemini_1.5p": "Gemini 1.5 Pro",
     "typhoon_audio": "Typhoon Audio",
 }
+
+
+def get_aesthetic_timestamp():
+    """
+    Returns a beautifully formatted timestamp in the format:
+    'Tuesday, December 10th, 2024 at 3:45 PM'
+    """
+    # Get timezone object for PST
+    pst = ZoneInfo("America/Los_Angeles")
+
+    # Get current time in PST
+    now = datetime.now(pst)
+
+    # Add suffix to day number (1st, 2nd, 3rd, etc.)
+    day = now.day
+    if 4 <= day <= 20 or 24 <= day <= 30:
+        suffix = "th"
+    else:
+        suffix = ["st", "nd", "rd"][day % 10 - 1]
+    return now.strftime(f"%A, %B {day}{suffix}, %Y at %-I:%M %p")
 
 
 def bootstrap_ci(data, n_bootstrap=10000, ci=95):
@@ -105,11 +127,12 @@ def create_win_rate_plot(per_model_wins):
 
     fig.update_layout(
         autosize=True,
+        showlegend=False,
         plot_bgcolor="white",
         title={
             "text": "Talk Arena Live Win Rates with 95% Confidence Intervals",
             "y": 0.95,
-            "x": 0.4,
+            "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
         },
@@ -118,15 +141,16 @@ def create_win_rate_plot(per_model_wins):
         bargap=0.2,
         yaxis=dict(tickformat=",.1f%", tickmode="auto", range=[0, 100], gridcolor="lightgray", griddash="dash"),
         legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.8,
+            orientation="h",  # Make legend horizontal
+            yanchor="bottom",
+            y=-0.5,  # Position below plot
+            xanchor="center",
+            x=0.5,  # Center horizontally
             bgcolor="rgba(255, 255, 255, 0.8)",
             bordercolor="lightgray",
             borderwidth=1,
         ),
-        margin=dict(r=250),
+        margin=dict(l=10, r=10, t=10, b=10),  # Balanced margins
         hoverlabel=dict(bgcolor="white", font_size=14, bordercolor="gray"),
     )
 
@@ -256,11 +280,12 @@ def create_bt_plot(bootstrap_ratings):
 
     fig.update_layout(
         autosize=True,
+        showlegend=False,
         plot_bgcolor="white",
         title={
             "text": "Talk Arena Live Bradley-Terry Ratings with 95% Confidence Intervals",
             "y": 0.9,
-            "x": 0.4,
+            "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
         },
@@ -268,15 +293,16 @@ def create_bt_plot(bootstrap_ratings):
         yaxis_title="Rating",
         yaxis=dict(gridcolor="lightgray", griddash="dash"),
         legend=dict(
-            yanchor="top",
-            y=1.02,
-            xanchor="left",
-            x=0.85,
+            orientation="h",  # Make legend horizontal
+            yanchor="bottom",
+            y=-0.5,  # Position below plot
+            xanchor="center",
+            x=0.5,  # Center horizontally
             bgcolor="rgba(255, 255, 255, 0.8)",
             bordercolor="lightgray",
             borderwidth=1,
         ),
-        margin=dict(r=250),
+        margin=dict(l=10, r=10, t=10, b=10),  # Balanced margins
     )
 
     fig.update_xaxes(showgrid=False)
@@ -310,6 +336,7 @@ def process_and_visualize():
 
 # Create Gradio interface
 with gr.Blocks(title="Talk Arena Leaderboard Analysis") as demo:
+    gr.Markdown(value=f"## Live Updated (Last Refresh: {get_aesthetic_timestamp()} PST)")
     with gr.Row():
         bt_plot = gr.Plot(label="Bradley-Terry Ratings")
     with gr.Row():
