@@ -150,7 +150,7 @@ async def pairwise_response_async(audio_input, state, model_order):
         latencies[order]["response_length"] = total_length
     print(latencies)
     yield (
-        gr.Button(value="Vote for which model is better!", interactive=False, variant="primary"),
+        gr.Button(value="Vote for which model is better!", interactive=False, variant="primary", visible=False),
         resps[0],
         resps[1],
         gr.Button(visible=not error_in_model),
@@ -246,6 +246,7 @@ def clear_factory(button_id):
             gr.Button(
                 value="Record Audio to Submit Again!",
                 interactive=False,
+                visible=True,
             ),
             gr.Button(visible=False),
             gr.Button(visible=False),
@@ -287,10 +288,12 @@ theme = gr.themes.Soft(
     neutral_hue="stone",
 )
 
+with open("src/talk_arena/styles.css", "r") as css_file:
+    custom_css = css_file.read()
+
 db = TinyThreadSafeDB("live_votes.json")
 
-
-with gr.Blocks(theme=theme, fill_height=True) as demo:
+with gr.Blocks(theme=theme, fill_height=True, css=custom_css) as demo:
     submitted_preferences = gr.State(0)
     state = gr.State(0)
     model_order = gr.State([])
@@ -302,14 +305,14 @@ with gr.Blocks(theme=theme, fill_height=True) as demo:
     with gr.Row():
         audio_input = gr.Audio(sources=["microphone"], streaming=False, label="Audio Input")
 
-    with gr.Row():
-        btn = gr.Button(value="Record Audio to Submit!", interactive=False)
-
     with gr.Row(equal_height=True):
         with gr.Column(scale=1):
-            out1 = gr.Textbox(visible=False, lines=5, max_lines=5, autoscroll=False)
+            out1 = gr.Textbox(visible=False, lines=5, autoscroll=True)
         with gr.Column(scale=1):
-            out2 = gr.Textbox(visible=False, lines=5, max_lines=5, autoscroll=False)
+            out2 = gr.Textbox(visible=False, lines=5, autoscroll=True)
+
+    with gr.Row():
+        btn = gr.Button(value="Record Audio to Submit!", interactive=False)
 
     with gr.Row(equal_height=True):
         reason = gr.Textbox(label="[Optional] Explain Your Preferences", visible=False, scale=4)

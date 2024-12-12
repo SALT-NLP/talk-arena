@@ -1,0 +1,25 @@
+@media (max-width: 768px) {
+    .lam-response-box {
+        max-height: 230px;
+    }
+
+    .lam-response-box > label {
+        max-height: 100%;
+    }
+    
+    .lam-response-box > label > div > textarea{
+        max-height: 100%;
+        height: 100% !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .lam-response-box {
+        max-height: 40vh;
+    }
+
+    .lam-response-box > label > div > textarea{
+        max-height: calc(40vh - 50px) !important;
+    }
+}
+
