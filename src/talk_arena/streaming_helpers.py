@@ -48,6 +48,7 @@ def gradio_gen_factory(streaming_fn, model_name, anonymous):
                         info="",
                         visible=True,
                         label=model_name if not anonymous else f"Model {order+1}",
+                        elem_classes="lam-response-box"
                     )
                     yield my_resp
                     await asyncio.sleep(0.001)
