@@ -15,7 +15,14 @@ from datasets import Audio
 from openai import AsyncOpenAI
 from transformers import AutoModel, AutoProcessor, Qwen2AudioForConditionalGeneration, TextIteratorStreamer
 from transformers.generation import GenerationConfig
+from collections import defaultdict
 
+def _get_prompt_for_model_name(model_id):
+    print(model_id)
+    prompt_dict = defaultdict(lambda: "You are a helpful assistant. Respond conversationally to the speech provided.")
+    # Requested Overrides
+    prompt_dict["scb10x/llama-3-typhoon-audio-8b-2411"] = "You are a helpful assistant. Respond conversationally to the speech provided in the language it is spoken in."
+    return prompt_dict[model_id]
 
 def _get_config_for_model_name(model_id):
     if "API_MODEL_CONFIG" in os.environ:
@@ -187,11 +194,8 @@ def api_streaming(model_id):
         with open(f"{x}.wav", "rb") as wav_file:
             wav_data = wav_file.read()
         encoded_string = base64.b64encode(wav_data).decode("utf-8")
-        prompt = (
-            "You are a helpful assistant. Respond conversationally to the speech provided in the language it is"
-            " spoken in."
-        )
         try:
+            prompt = _get_prompt_for_model_name(model_id)
             completion = await client.chat.completions.create(
                 model=model_id,
                 messages=[
@@ -212,6 +216,7 @@ def api_streaming(model_id):
                     yield "".join(text_response)
             os.remove(f"{x}.wav")
         except:
+            print(f"error for {model_id}")
             raise StopAsyncIteration(f"error for {model_id}")
 
     return get_chat_response, client
