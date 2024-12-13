@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 import os
+from collections import defaultdict
 from pathlib import Path
 
 import google.generativeai as genai
@@ -15,14 +16,16 @@ from datasets import Audio
 from openai import AsyncOpenAI
 from transformers import AutoModel, AutoProcessor, Qwen2AudioForConditionalGeneration, TextIteratorStreamer
 from transformers.generation import GenerationConfig
-from collections import defaultdict
+
 
 def _get_prompt_for_model_name(model_id):
-    print(model_id)
     prompt_dict = defaultdict(lambda: "You are a helpful assistant. Respond conversationally to the speech provided.")
     # Requested Overrides
-    prompt_dict["scb10x/llama-3-typhoon-audio-8b-2411"] = "You are a helpful assistant. Respond conversationally to the speech provided in the language it is spoken in."
+    prompt_dict["scb10x/llama-3-typhoon-audio-8b-2411"] = (
+        "You are a helpful assistant. Respond conversationally to the speech provided in the language it is spoken in."
+    )
     return prompt_dict[model_id]
+
 
 def _get_config_for_model_name(model_id):
     if "API_MODEL_CONFIG" in os.environ:
@@ -55,7 +58,7 @@ def gradio_gen_factory(streaming_fn, model_name, anonymous):
                         info="",
                         visible=True,
                         label=model_name if not anonymous else f"Model {order+1}",
-                        elem_classes="lam-response-box"
+                        elem_classes="lam-response-box",
                     )
                     yield my_resp
                     await asyncio.sleep(0.001)

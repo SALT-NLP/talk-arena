@@ -9,7 +9,8 @@ from zoneinfo import ZoneInfo
 import gradio as gr
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.express as px
+import plotly.io as pio
 from apscheduler.schedulers.background import BackgroundScheduler
 from scipy.optimize import minimize
 from scipy.special import expit
@@ -100,35 +101,38 @@ def calculate_win_rates(json_data):
         if int(wins) != wins:
             wins_data += [0.5]
         lower, upper = bootstrap_ci(wins_data)
-        per_model_wins[model] = {"win_rate": win_rate, "95_lower": lower, "95_upper": upper}
+        per_model_wins[model] = {
+            "model": model,
+            "win_rate": win_rate,
+            "95_lower": (win_rate - lower),
+            "95_upper": (upper - win_rate),
+        }
+    df = pd.DataFrame.from_dict(per_model_wins).T
 
-    return per_model_wins, total_votes
+    return df, total_votes
 
 
-def create_win_rate_plot(per_model_wins):
+def create_win_rate_plot(wins_df):
     """Create win rate plot using Plotly."""
-    sorted_models = sorted(per_model_wins.items(), key=lambda x: x[1]["win_rate"], reverse=True)
+    wins_df["Source"] = wins_df["Source"].astype(str)
+    wins_df = wins_df.sort_values(by=["Source", "win_rate"], ascending=False)
+    wins_df["model"] = wins_df["model"].apply(lambda x: NAME_MAPPING.get(x, x))
 
-    fig = go.Figure()
+    fig = px.bar(
+        wins_df,
+        x="model",
+        y="win_rate",
+        error_y="95_upper",
+        error_y_minus="95_lower",
+        color="model",
+        color_discrete_sequence=COLORS,
+        animation_group="model",
+        animation_frame="Source",
+    )
 
-    for i, (model_name, metrics) in enumerate(sorted_models):
-        lower_ci = metrics["95_lower"] * 100
-        win_rate = metrics["win_rate"] * 100
-        ci_range = win_rate - lower_ci
-
-        fig.add_trace(
-            go.Bar(
-                x=[NAME_MAPPING.get(model_name, model_name)],
-                y=[win_rate],
-                error_y=dict(type="data", array=[ci_range], visible=True),
-                marker_color=COLORS[i % len(COLORS)],
-                name=NAME_MAPPING.get(model_name, model_name),
-                hovertemplate="<b>%{x}</b><br>"
-                + "Win Rate: %{y:.1f}%<br>"
-                + f"95% CI: ±{ci_range:.1f}%<br>"
-                + "<extra></extra>",
-            )
-        )
+    fig.update_traces(
+        hovertemplate="<b>%{x}</b><br>" + "Win Rate: %{y}" + "<extra></extra>",
+    )
 
     fig.update_layout(
         autosize=True,
@@ -144,7 +148,9 @@ def create_win_rate_plot(per_model_wins):
         xaxis_title="Model",
         yaxis_title="Win Rate (%)",
         bargap=0.2,
-        yaxis=dict(tickformat=",.1f%", tickmode="auto", range=[0, 101], gridcolor="#C9CCD1", griddash="dash", gridwidth=2),
+        yaxis=dict(
+            tickformat=".0%", tickmode="auto", range=[0, 1.01], gridcolor="#C9CCD1", griddash="dash", gridwidth=2
+        ),
         legend=dict(
             orientation="h",  # Make legend horizontal
             yanchor="bottom",
@@ -266,26 +272,30 @@ def compute_bootstrap_bt(
     df_ratings = pd.DataFrame(ratings_list, columns=models)
     return df_ratings[df_ratings.median().sort_values(ascending=False).index]
 
+
 def create_bt_plot(bootstrap_ratings):
     """Create Bradley-Terry ratings plot using Plotly."""
-    fig = go.Figure()
-    min_samp = 10000
-    max_samp = -1
-    for i, col in enumerate(bootstrap_ratings.columns):
-        samples = sorted(bootstrap_ratings[col])
-        samples = [sample for i, sample in enumerate(samples) if i%100 == 0 or i == len(samples)-1]
-        min_samp = min(min(samples), min_samp)
-        max_samp = max(max(samples), max_samp)
-        fig.add_trace(
-            go.Violin(
-                y=[int(sample) for sample in samples],
-                line_color=COLORS[i % len(COLORS)],
-                name=NAME_MAPPING.get(col, col),
-                opacity=1,
-                box_visible=False,
-                meanline_visible=False,
-            )
-        )
+    melted_bootstrap = bootstrap_ratings.melt(id_vars=["Source", "level_1"], var_name="Model", value_name="BT")
+    melted_bootstrap = melted_bootstrap.dropna()
+    melted_bootstrap = melted_bootstrap.sort_values(by=["Source", "Model", "BT"], ascending=False)
+    # Pretty Names
+    melted_bootstrap["Model"] = melted_bootstrap["Model"].apply(lambda x: NAME_MAPPING.get(x, x))
+    # Compression for Client Side
+    melted_bootstrap["BT"] = melted_bootstrap["BT"].apply(lambda x: int(x))
+    min_samp = melted_bootstrap["BT"].min()
+    max_samp = melted_bootstrap["BT"].max()
+    idx_keep = list(range(0, len(melted_bootstrap), 10))
+    melted_bootstrap = melted_bootstrap.iloc[idx_keep]
+    melted_bootstrap = melted_bootstrap.sort_values(by=["Source", "BT"], ascending=False)
+    fig = px.violin(
+        melted_bootstrap,
+        x="Model",
+        y="BT",
+        color="Model",
+        animation_group="Model",
+        animation_frame="Source",
+        color_discrete_sequence=COLORS,
+    )
 
     fig.update_layout(
         autosize=True,
@@ -320,6 +330,32 @@ def create_bt_plot(bootstrap_ratings):
     return fig
 
 
+def get_wr_plot():
+    jrep = json.loads(pio.to_json(WR_PLOT))
+    for step in jrep["layout"]["sliders"][0]["steps"]:
+        step["args"][1]["frame"]["duration"] = 500
+        step["args"][1]["transition"]["duration"] = 500
+    jrep["layout"]["updatemenus"] = []
+    jrep["layout"]["sliders"][0]["len"] = 0.8
+    jrep["layout"]["sliders"][0]["pad"] = {}
+    return json.dumps(jrep)
+
+
+def get_bt_plot():
+    jrep = json.loads(pio.to_json(BT_PLOT))
+    for step in jrep["layout"]["sliders"][0]["steps"]:
+        step["args"][1]["frame"]["duration"] = 500
+        step["args"][1]["transition"]["duration"] = 500
+    jrep["layout"]["updatemenus"] = []
+    jrep["layout"]["sliders"][0]["len"] = 0.8
+    jrep["layout"]["sliders"][0]["pad"] = {}
+    return json.dumps(jrep)
+
+
+def get_update_time():
+    return UPDATE_TIME
+
+
 def viz_factory(force=False):
     def process_and_visualize():
         """Main function to process JSON data and create visualizations."""
@@ -328,20 +364,40 @@ def viz_factory(force=False):
             return WR_PLOT, BT_PLOT, UPDATE_TIME
         try:
             # Read JSON data
-            json_data = open("/home/wheld3/talk-arena/live_votes.json", "r").read()
+            pub_json_data = open("/home/wheld3/talk-arena/live_votes.json", "r").read()
+            prolific_json_data = open("/home/wheld3/talk-arena/prolific_votes.json", "r").read()
+            merged_json_data = json.dumps(
+                {"_default": {**json.loads(pub_json_data)["_default"], **json.loads(prolific_json_data)["_default"]}}
+            )
             # Calculate win rates and create win rate plot
-            win_rates, total_votes = calculate_win_rates(json_data)
+            pub_win_rates, pub_votes = calculate_win_rates(pub_json_data)
+            pro_win_rates, pro_votes = calculate_win_rates(prolific_json_data)
+            total_win_rates, total_votes = calculate_win_rates(merged_json_data)
+            win_rates = (
+                pd.concat([pub_win_rates, pro_win_rates, total_win_rates], keys=["Public", "Prolific", "Total"])
+                .reset_index()
+                .rename(columns={"level_0": "Source"})
+            )
             WR_PLOT = create_win_rate_plot(win_rates)
 
             # Calculate Bradley-Terry ratings and create BT plot
-            bootstrap_ratings = compute_bootstrap_bt(json_data, num_round=10000)
+            pub_bootstrap_ratings = compute_bootstrap_bt(pub_json_data, num_round=10000)
+            pro_bootstrap_ratings = compute_bootstrap_bt(prolific_json_data, num_round=10000)
+            total_bootstrap_ratings = compute_bootstrap_bt(merged_json_data, num_round=10000)
+            bootstrap_ratings = (
+                pd.concat(
+                    [pub_bootstrap_ratings, pro_bootstrap_ratings, total_bootstrap_ratings],
+                    keys=["Public", "Prolific", "Total"],
+                )
+                .reset_index()
+                .rename(columns={"level_0": "Source"})
+            )
             BT_PLOT = create_bt_plot(bootstrap_ratings)
-            print(BT_PLOT)
             UPDATE_TIME = gr.Markdown(
                 value=textwrap.dedent(
                     f"""
-                    ## Live Updated
-                    ### (Last Refresh: {get_aesthetic_timestamp()} PST, Total Votes: {total_votes})
+                    <h4 class="nx-font-semibold nx-tracking-tight nx-text-slate-900 dark:nx-text-slate-100 nx-text-xl">Last Refresh: {get_aesthetic_timestamp()} PST</h4>
+                    <h6 class="nx-font-semibold nx-tracking-tight nx-text-slate-900 dark:nx-text-slate-100nx-text-base">Total Votes: {total_votes}, Public Votes: {pub_votes}, Prolific Votes: {pro_votes}</h6>
                     """
                 )
             )
@@ -380,10 +436,16 @@ with gr.Blocks(title="Talk Arena Leaderboard Analysis", theme=theme) as demo:
     with gr.Row():
         win_rate_plot = gr.Plot(label="Win Rates", value=WR_PLOT)
 
-    demo.load(fn=viz_factory(force=False), inputs=[], outputs=[win_rate_plot, bt_plot, last_updated], show_progress="minimal")
+    d1 = gr.Textbox(visible=False)
+    demo.load(
+        fn=viz_factory(force=False), inputs=[], outputs=[win_rate_plot, bt_plot, last_updated], show_progress="minimal"
+    )
+    demo.load(fn=get_wr_plot, inputs=[], outputs=[d1])
+    demo.load(fn=get_bt_plot, inputs=[], outputs=[d1])
+    demo.load(fn=get_update_time, inputs=[], outputs=[d1])
 
 if __name__ == "__main__":
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=viz_factory(force=True), trigger="interval", seconds=300)
     scheduler.start()
-    demo.queue(default_concurrency_limit=10, api_open=False).launch(share=True, server_port=8000, node_port=8002)
+    demo.queue(default_concurrency_limit=10, api_open=True).launch(share=True, server_port=8004, node_port=8005)

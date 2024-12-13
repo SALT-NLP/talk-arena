@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import random
 import textwrap
@@ -5,20 +6,21 @@ import time
 
 import gradio as gr
 import xxhash
+from dotenv import load_dotenv
 from transformers import pipeline
 
 import talk_arena.streaming_helpers as sh
 from talk_arena.db_utils import TinyThreadSafeDB
-from dotenv import load_dotenv
 
-import argparse
 
 load_dotenv()
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Talk Arena Demo")
     parser.add_argument("--free_only", action="store_true", help="Only use free models")
     return parser.parse_args()
+
 
 args = parse_args()
 
