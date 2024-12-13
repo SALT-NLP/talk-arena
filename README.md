@@ -6,6 +6,8 @@ sdk_version: 5.8.0
 ---
 # Running your Own Speech Arena
 
+# Talk Arena UI, PRs welcome!
+
 ```sh
 git clone git@github.com:SALT-NLP/talk-arena.git
 cd talk-arena
