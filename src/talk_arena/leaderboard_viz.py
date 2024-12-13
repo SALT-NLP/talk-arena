@@ -282,7 +282,7 @@ def create_bt_plot(bootstrap_ratings):
     melted_bootstrap["Model"] = melted_bootstrap["Model"].apply(lambda x: NAME_MAPPING.get(x, x))
     # Compression for Client Side
     melted_bootstrap["BT"] = melted_bootstrap["BT"].apply(lambda x: int(x))
-    min_samp = melted_bootstrap["BT"].min()
+    min_samp = melted_bootstrap[melted_bootstrap["BT"] > 0]["BT"].min()
     max_samp = melted_bootstrap["BT"].max()
     idx_keep = list(range(0, len(melted_bootstrap), 10))
     melted_bootstrap = melted_bootstrap.iloc[idx_keep]
@@ -373,6 +373,13 @@ def viz_factory(force=False):
             pub_win_rates, pub_votes = calculate_win_rates(pub_json_data)
             pro_win_rates, pro_votes = calculate_win_rates(prolific_json_data)
             total_win_rates, total_votes = calculate_win_rates(merged_json_data)
+            all_models = total_win_rates["model"].unique()
+            pro_models = pro_win_rates["model"].unique()
+            for model in all_models:
+                if model not in pro_models:
+                    new_index = len(pro_win_rates)
+                    pro_win_rates.loc[new_index] = [model, -0.1, -0.1, -0.2]
+
             win_rates = (
                 pd.concat([pub_win_rates, pro_win_rates, total_win_rates], keys=["Public", "Prolific", "Total"])
                 .reset_index()
@@ -384,6 +391,10 @@ def viz_factory(force=False):
             pub_bootstrap_ratings = compute_bootstrap_bt(pub_json_data, num_round=10000)
             pro_bootstrap_ratings = compute_bootstrap_bt(prolific_json_data, num_round=10000)
             total_bootstrap_ratings = compute_bootstrap_bt(merged_json_data, num_round=10000)
+            for model in all_models:
+                if model not in pro_models:
+                    pro_bootstrap_ratings[model] = pro_bootstrap_ratings["diva_3_8b"] * -1
+
             bootstrap_ratings = (
                 pd.concat(
                     [pub_bootstrap_ratings, pro_bootstrap_ratings, total_bootstrap_ratings],
