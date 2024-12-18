@@ -43,6 +43,7 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
         gemini_audio, gemini_model = sh.gemini_streaming("models/gemini-1.5-flash")
         gpt4o_audio, gpt4o_model = sh.gpt4o_streaming("models/gpt4o")
         geminip_audio, geminip_model = sh.gemini_streaming("models/gemini-1.5-pro")
+        gemini2_audio, gemini2_model = sh.gemini_streaming("models/gemini-2.0-flash-exp")
     typhoon_audio, typhoon_model = sh.api_streaming("scb10x/llama-3-typhoon-audio-8b-2411")
 
     competitor_info = [
@@ -61,6 +62,7 @@ if gr.NO_RELOAD:  # Prevents Re-init during hot reloading
             (sh.gradio_gen_factory(gemini_audio, "Gemini 1.5 Flash", anonymous), "gemini_1.5f", "Gemini 1.5 Flash"),
             (sh.gradio_gen_factory(gpt4o_audio, "GPT4o", anonymous), "gpt4o", "GPT-4o"),
             (sh.gradio_gen_factory(geminip_audio, "Gemini 1.5 Pro", anonymous), "gemini_1.5p", "Gemini 1.5 Pro"),
+            (sh.gradio_gen_factory(geminip_audio, "Gemini 2 Flash", anonymous), "gemini_2f", "Gemini 2 Flash"),
         ]
 
     resp_generators = [generator for generator, _, _ in competitor_info]

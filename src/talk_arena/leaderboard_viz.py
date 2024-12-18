@@ -34,6 +34,7 @@ WR_PLOT = None
 BT_PLOT = None
 UPDATE_TIME = None
 NAME_MAPPING = {
+    "gemini_2f": "Gemini 2.0 Flash (Experimental)",
     "diva_3_8b": "DiVA Llama 3 8B",
     "qwen2": "Qwen 2 Audio",
     "pipe_l3.0": "Pipelined Llama 3 8B",
@@ -408,7 +409,7 @@ def viz_factory(force=False):
                 value=textwrap.dedent(
                     f"""
                     <h4 class="nx-font-semibold nx-tracking-tight nx-text-slate-900 dark:nx-text-slate-100 nx-text-xl">Last Refresh: {get_aesthetic_timestamp()} PST</h4>
-                    <h6 class="nx-font-semibold nx-tracking-tight nx-text-slate-900 dark:nx-text-slate-100nx-text-base">Total Votes: {total_votes}, Public Votes: {pub_votes}, Prolific Votes: {pro_votes}</h6>
+                    <h6 class="nx-font-semibold nx-tracking-tight nx-text-slate-900 dark:nx-text-slate-100 nx-text-base">Total Votes: {total_votes}, Public Votes: {pub_votes}, Prolific Votes: {pro_votes}</h6>
                     """
                 )
             )
